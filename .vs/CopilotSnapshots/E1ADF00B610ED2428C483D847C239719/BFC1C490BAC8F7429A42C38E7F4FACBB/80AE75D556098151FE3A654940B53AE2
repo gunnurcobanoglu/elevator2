@@ -1,0 +1,97 @@
+﻿using System.Globalization;
+using System.Windows;
+using System.Windows.Data;
+
+namespace elevator_simulation.Converters
+{
+    public class FloorToPositionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int floor)
+            {
+                // Her kat 60 piksel yukseklikte
+                // 19. kat en ustte (0 pozisyon), 0. kat en altta
+                return -(floor * 60);
+            }
+            return 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    // Kat numaralari icin converter - asansor yukari ciktikca alt katlar kaybolur
+    public class FloorListPositionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int floor)
+            {
+                // Kat numaralarini asansorle birlikte hareket ettir
+                // Ama maksimum 10 kat gorunecek sekilde sinirla
+                int offset = Math.Max(0, floor - 9); // 10 ve uzeri katlarda kayma baslar
+                return -(offset * 60);
+            }
+            return 0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class BoolToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue)
+            {
+                return boolValue ? Visibility.Visible : Visibility.Collapsed;
+            }
+            return Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class PassengerStatusConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool hasPassenger)
+            {
+                return hasPassenger ? "Iceride" : "Yok";
+            }
+            return "Yok";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class FloorEqualityConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length == 2 && values[0] is int buttonFloor && values[1] is int currentFloor)
+            {
+                return buttonFloor == currentFloor;
+            }
+            return false;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
