@@ -10,16 +10,12 @@ namespace elevator_simulation.Converters
         {
             if (value is int floor)
             {
-                // 0-9 katlar arasi: Normal hareket (floor * 55 yukari)
-                // 10 ve uzeri katlarda: Asansor 9. katta sabitlenir, katlar kayar
                 if (floor <= 9)
                 {
-                    // 0-9 arasi normal hareket
                     return -(floor * 55);
                 }
                 else
                 {
-                    // 10 ve uzeri: Asansor 9. katta sabit kalir
                     return -(9 * 55);
                 }
             }
@@ -32,18 +28,14 @@ namespace elevator_simulation.Converters
         }
     }
 
-    // Kat numaralari icin converter - asansor yukari ciktikca ust katlar kaybolur, alt katlar gorunur
     public class FloorListPositionConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is int floor)
             {
-                // 0-9 katlari arasi: Canvas sabit kalir (0-9 gorunur)
-                // 10. kattan itibaren: Canvas asagi kayar, ust katlar kaybolur
-                // 10. kat ve uzeri: (floor - 9) * 55 kadar asagi kay
                 int offset = Math.Max(0, floor - 9);
-                return (offset * 55); // Pozitif deger - asagi kayar
+                return (offset * 55);
             }
             return 0;
         }
@@ -100,6 +92,40 @@ namespace elevator_simulation.Converters
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    /// <summary>
+    /// Kapý açýklýk miktarýný (0.0-1.0) TranslateX deðerine dönüþtürür
+    /// Sol kapý için: Negatif yönde kayar (sola)
+    /// Sað kapý için: Pozitif yönde kayar (saða)
+    /// </summary>
+    public class DoorPositionConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is double openAmount && parameter is string direction)
+            {
+                // Maksimum kayma mesafesi (100 piksel - kapýnýn geniþliðinin yarýsý)
+                const double maxOffset = 100;
+
+                if (direction == "Left")
+                {
+                    // Sol kapý: Sola kay (negatif)
+                    return -(openAmount * maxOffset);
+                }
+                else if (direction == "Right")
+                {
+                    // Sað kapý: Saða kay (pozitif)
+                    return (openAmount * maxOffset);
+                }
+            }
+            return 0.0;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }

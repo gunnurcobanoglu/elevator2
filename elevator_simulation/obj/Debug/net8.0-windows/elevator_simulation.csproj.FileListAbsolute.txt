@@ -41,3 +41,4 @@ C:\Users\DELL\source\repos\elevator_simulation\elevator_simulation\obj\Debug\net
 C:\Users\DELL\source\repos\elevator_simulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.pdb
 C:\Users\DELL\source\repos\elevator_simulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.genruntimeconfig.cache
 C:\Users\DELL\source\repos\elevator_simulation\elevator_simulation\obj\Debug\net8.0-windows\ref\elevator_simulation.dll
+C:\Users\DELL\source\repos\elevator_simulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.sourcelink.json
