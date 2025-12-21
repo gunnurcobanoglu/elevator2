@@ -238,10 +238,10 @@
 													</TextBlock>
 												</StackPanel>
 
-												<!-- Yolcu Gostergesi (LED Tarz�) -->
-												<Border Background="#1A1A1A" 
+										<!-- Yolcu Gostergesi (LED Tarzı - Dinamik) -->
+										<Border Background="#1A1A1A" 
                                                        CornerRadius="15" 
-                                                       Padding="6,3"
+                                                       Padding="8,4"
                                                        HorizontalAlignment="Right" 
                                                        VerticalAlignment="Top"
                                                        Margin="0,5,8,0"
@@ -249,11 +249,26 @@
                                                        BorderThickness="1.5"
                                                        Visibility="{Binding HasPassenger, 
                                                            Converter={StaticResource BoolToVisibilityConverter}}">
-													<Border.Effect>
-														<DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#00FF00" Opacity="0.6"/>
-													</Border.Effect>
-													<TextBlock Text="&#x1F464;" FontSize="14" Foreground="#00FF00"/>
-												</Border>
+											<Border.Effect>
+												<DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#00FF00" Opacity="0.6"/>
+											</Border.Effect>
+											<StackPanel Orientation="Horizontal">
+												<ItemsControl ItemsSource="{Binding PassengerIcons}">
+													<ItemsControl.ItemsPanel>
+														<ItemsPanelTemplate>
+															<StackPanel Orientation="Horizontal"/>
+														</ItemsPanelTemplate>
+													</ItemsControl.ItemsPanel>
+													<ItemsControl.ItemTemplate>
+														<DataTemplate>
+															<TextBlock Text="&#x1F464;" FontSize="13" Foreground="#00FF00" Margin="1,0"/>
+														</DataTemplate>
+													</ItemsControl.ItemTemplate>
+												</ItemsControl>
+												<TextBlock Text="{Binding PassengerCount}" FontSize="12" FontWeight="Bold" 
+                                          Foreground="#00FF00" VerticalAlignment="Center" Margin="4,0,0,0"/>
+											</StackPanel>
+										</Border>
 
 												<!-- KAPI SiSTEMi -->
 												<!-- Sol Kapi -->
@@ -453,7 +468,7 @@
 						<TextBlock FontSize="16" Foreground="#424242">
                             <Run Text="&#x1F464;"/>
                             <Run Text="{Binding HasPassenger, 
-                                Converter={StaticResource PassengerStatusConverter}}"/>
+                                Converter={StaticResource PassengerStatusConverter}, Mode=OneWay}"/>
 						</TextBlock>
 					</StackPanel>
 				</Border>
@@ -468,12 +483,15 @@
 					</StackPanel>
 				</Border>
 
-				<Border Background="#FFEBEE" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+				<Border Background="#FFEBEE" CornerRadius="5" Padding="10" Margin="0,0,0,15">
 					<StackPanel>
-						<TextBlock Text="Mesaj:" FontSize="14" FontWeight="Bold" 
+						<TextBlock Text="Mesaj Geçmişi:" FontSize="14" FontWeight="Bold" 
                                   Foreground="#C62828" Margin="0,0,0,5"/>
-						<TextBlock Text="{Binding StatusMessage}" FontSize="14" 
-                                  Foreground="#424242" TextWrapping="Wrap"/>
+						<ScrollViewer Height="120" VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Disabled">
+							<TextBlock Text="{Binding StatusMessage}" FontSize="11" 
+                                      Foreground="#424242" TextWrapping="Wrap" LineHeight="16"/>
+						</ScrollViewer>
 					</StackPanel>
 				</Border>
 
