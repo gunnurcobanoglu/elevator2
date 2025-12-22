@@ -26,7 +26,7 @@ namespace elevator_simulation.ViewModels
         // Yolcu istekleri ve hedefler
         private readonly List<PassengerRequest> _pendingRequests = new();
         private readonly HashSet<int> _destinationFloors = new();
-        private const int MaxCapacity = 5;
+        private const int MaxCapacity = 10;
 
         public ObservableCollection<int> Floors { get; }
         public ObservableCollection<int> PassengerIcons
@@ -134,7 +134,8 @@ namespace elevator_simulation.ViewModels
             }
             else
             {
-                StatusMessage = _statusMessage + "\n" + newMessage;
+                // Yeni mesajý EN ÜSTE ekle
+                StatusMessage = newMessage + "\n" + _statusMessage;
             }
         }
 
