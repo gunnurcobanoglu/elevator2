@@ -1,0 +1,229 @@
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
+using elevator_simulation.Commands;
+using elevator_simulation.Models;
+
+namespace elevator_simulation.ViewModels
+{
+    public class ElevatorViewModel : ViewModelBase
+    {
+        private readonly ElevatorModel _elevator;
+        private readonly int _elevatorId;
+        
+        private int _currentFloor;
+        private string _elevatorState;
+        private int _passengerCount;
+        private double _doorOpenAmount;
+        private ObservableCollection<int> _passengerIcons;
+
+        // Yolcu istekleri - her asansör kendi yolcularını yönetir
+        private readonly List<PassengerRequest> _activePassengers = new();
+        private readonly HashSet<int> _destinationFloors = new();
+        private const int MaxCapacity = 10;
+
+        public int ElevatorId => _elevatorId;
+
+        public int CurrentFloor
+        {
+            get => _currentFloor;
+            set => SetProperty(ref _currentFloor, value);
+        }
+
+        public string ElevatorStateDisplay
+        {
+            get => _elevatorState;
+            set => SetProperty(ref _elevatorState, value);
+        }
+
+        public int PassengerCount
+        {
+            get => _passengerCount;
+            set
+            {
+                SetProperty(ref _passengerCount, value);
+                OnPropertyChanged(nameof(HasPassenger));
+                
+                PassengerIcons.Clear();
+                for (int i = 0; i < value; i++)
+                {
+                    PassengerIcons.Add(i);
+                }
+            }
+        }
+
+        public bool HasPassenger => _passengerCount > 0;
+
+        public double DoorOpenAmount
+        {
+            get => _doorOpenAmount;
+            set => SetProperty(ref _doorOpenAmount, value);
+        }
+
+        public ObservableCollection<int> PassengerIcons
+        {
+            get => _passengerIcons;
+            set => SetProperty(ref _passengerIcons, value);
+        }
+
+        public bool IsBusy => _elevator.State != Models.ElevatorState.Idle;
+
+        public ElevatorViewModel(int elevatorId)
+        {
+            _elevatorId = elevatorId;
+            _elevator = new ElevatorModel();
+            _passengerIcons = new ObservableCollection<int>();
+            
+            _currentFloor = 0;
+            _elevatorState = "Beklemede";
+            _passengerCount = 0;
+            _doorOpenAmount = 0.0;
+        }
+
+        // Asansörün bir yolcuyu alabileceğini kontrol et
+        public bool CanAcceptPassenger()
+        {
+            return _passengerCount < MaxCapacity;
+        }
+
+        // Asansörün belirli bir kata ne kadar uzakta olduğunu hesapla
+        public int GetDistanceToFloor(int floor)
+        {
+            return Math.Abs(_currentFloor - floor);
+        }
+
+        // Yolcu al
+        public async Task PickupPassenger(PassengerRequest request)
+        {
+            await MoveToFloor(request.PickupFloor);
+            
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kapı Açılıyor";
+            await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
+
+            _elevator.State = Models.ElevatorState.WaitingForPassenger;
+            ElevatorStateDisplay = "Yolcu Biniyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+            request.Status = RequestStatus.PickedUp;
+            _activePassengers.Add(request);
+            PassengerCount++;
+
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            ElevatorStateDisplay = "Kapı Kapanıyor";
+            await Task.Delay(TimeSpan.FromSeconds(1.0));
+            await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+        }
+
+        // Hedef kat seç
+        public void SetDestination(PassengerRequest request, int targetFloor)
+        {
+            request.DestinationFloor = targetFloor;
+            _destinationFloors.Add(targetFloor);
+        }
+
+        // Yolcuları indir
+        public async Task<List<PassengerRequest>> DropoffPassengers(int floor)
+        {
+            var droppingPassengers = _activePassengers
+                .Where(r => r.DestinationFloor == floor)
+                .ToList();
+
+            if (!droppingPassengers.Any())
+                return new List<PassengerRequest>();
+
+            await MoveToFloor(floor);
+
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kapı Açılıyor";
+            await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
+
+            _elevator.State = Models.ElevatorState.WaitingForPassenger;
+            ElevatorStateDisplay = "Yolcu İniyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+            foreach (var request in droppingPassengers)
+            {
+                request.Status = RequestStatus.Completed;
+                _activePassengers.Remove(request);
+            }
+
+            while (_destinationFloors.Remove(floor)) { }
+            PassengerCount -= droppingPassengers.Count;
+
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            ElevatorStateDisplay = "Kapı Kapanıyor";
+            await Task.Delay(TimeSpan.FromSeconds(1.0));
+            await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+
+            return droppingPassengers;
+        }
+
+        // Bir sonraki durağı bul
+        public int? GetNextStop()
+        {
+            if (!_destinationFloors.Any())
+                return null;
+
+            // Mevcut yönde en yakın durağı bul
+            if (_elevator.State == Models.ElevatorState.MovingUp)
+            {
+                return _destinationFloors.Where(f => f > _currentFloor).OrderBy(f => f).FirstOrDefault();
+            }
+            else if (_elevator.State == Models.ElevatorState.MovingDown)
+            {
+                return _destinationFloors.Where(f => f < _currentFloor).OrderByDescending(f => f).FirstOrDefault();
+            }
+            else
+            {
+                // Boştaysa en yakın durağa git
+                return _destinationFloors.OrderBy(f => Math.Abs(f - _currentFloor)).FirstOrDefault();
+            }
+        }
+
+        private async Task MoveToFloor(int targetFloor)
+        {
+            if (_elevator.CurrentFloor < targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingUp;
+                ElevatorStateDisplay = "Yukarı Çıkıyor";
+                
+                while (_elevator.CurrentFloor < targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor++;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+            else if (_elevator.CurrentFloor > targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingDown;
+                ElevatorStateDisplay = "Aşağı İniyor";
+                
+                while (_elevator.CurrentFloor > targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor--;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+
+            _elevator.State = Models.ElevatorState.Idle;
+            ElevatorStateDisplay = "Beklemede";
+        }
+
+        private async Task AnimateDoor(double from, double to, double duration)
+        {
+            const int steps = 20;
+            double stepDuration = duration / steps;
+            double increment = (to - from) / steps;
+
+            for (int i = 0; i <= steps; i++)
+            {
+                DoorOpenAmount = from + (increment * i);
+                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
+            }
+
+            DoorOpenAmount = to;
+        }
+    }
+}

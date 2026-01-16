@@ -1,0 +1,64 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
+
+namespace elevator_simulation
+{
+    public partial class MainWindow : Window
+    {
+        private const int KatYuksekligi = 55;
+        private const int ToplamKatSayisi = 19;
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            // Her iki asansör için kat çizgilerini oluştur
+            CizgileriOlustur(Elevator1Canvas);
+            CizgileriOlustur(Elevator2Canvas);
+        }
+
+        private void CizgileriOlustur(Canvas canvas)
+        {
+            if (canvas == null) return;
+
+            for (int N = 0; N <= ToplamKatSayisi; N++)
+            {
+                double lineBottom = N * KatYuksekligi;
+                double textBottom = lineBottom + 15;
+
+                Line katCizgisi = new Line
+                {
+                    X1 = 0,
+                    Y1 = 0,
+                    X2 = 400,
+                    Y2 = 0,
+                    Stroke = (N == 0 || N == ToplamKatSayisi) ? Brushes.Black : Brushes.Brown,
+                    StrokeThickness = (N == 0 || N == ToplamKatSayisi) ? 2 : 1
+                };
+                
+                Canvas.SetBottom(katCizgisi, lineBottom);
+
+                if (N > 0 && N < ToplamKatSayisi)
+                {
+                    katCizgisi.StrokeDashArray = new DoubleCollection { 5, 2 };
+                }
+
+                TextBlock katNumarasi = new TextBlock
+                {
+                    Text = N.ToString(),
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Foreground = Brushes.Brown,
+                    Opacity = 0.5
+                };
+                
+                Canvas.SetLeft(katNumarasi, 10);
+                Canvas.SetBottom(katNumarasi, textBottom);
+
+                canvas.Children.Add(katCizgisi);
+                canvas.Children.Add(katNumarasi);
+            }
+        }
+    }
+}
