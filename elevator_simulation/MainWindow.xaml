@@ -7,7 +7,7 @@
         xmlns:vm="clr-namespace:elevator_simulation.ViewModels"
         xmlns:conv="clr-namespace:elevator_simulation.Converters"
         mc:Ignorable="d"
-        Title="Iki Asansor Yan Yana (Max 10 Kisi)" Height="700" Width="2000">
+        Title="Asansor Simulasyonu" Height="700" Width="1000">
 
 	<Window.Resources>
 		<conv:FloorToPositionConverter x:Key="FloorToPositionConverter"/>
@@ -107,7 +107,7 @@
 					<RowDefinition Height="*"/>
 				</Grid.RowDefinitions>
 
-				<TextBlock Grid.Row="0" Text="IKI ASANSOR YAN YANA" 
+				<TextBlock Grid.Row="0" Text="ASANSOR SIMULASYONU" 
                           FontSize="24" FontWeight="Bold" 
                           HorizontalAlignment="Center" Margin="0,20,0,20"
                           Foreground="#68228b"/>
@@ -123,7 +123,7 @@
 						<Rectangle Width="4" Fill="#2C2C2C" HorizontalAlignment="Right" Margin="0,0,40,0"/>
 						<Rectangle Width="2" Fill="#666666" HorizontalAlignment="Right" Margin="0,0,41,0" Opacity="0.5"/>
 
-						<Canvas x:Name="Elevator1Canvas" VerticalAlignment="Bottom" Height="1100">
+						<Canvas x:Name="MainCanvas" VerticalAlignment="Bottom" Height="1100">
 							<Canvas.RenderTransform>
 								<TranslateTransform Y="{Binding CurrentFloor, 
                                     Converter={StaticResource FloorListPositionConverter}}"/>
@@ -600,5 +600,4 @@
 		</Border>
 	</Grid>
 </Window>
-
 
