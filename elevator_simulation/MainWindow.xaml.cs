@@ -20,16 +20,34 @@ namespace elevator_simulation
         public MainWindow()
         {
             InitializeComponent();
-            // Kat çizgilerini ve numaralarýný oluþturan metodu çaðýr
-            CizgileriOlustur();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Asansör 1 Canvas
+            var canvas1 = FindName("Elevator1Canvas") as Canvas;
+            if (canvas1 != null)
+            {
+                CizgileriOlustur(canvas1);
+            }
+
+            // Asansör 2 Canvas
+            var canvas2 = FindName("Elevator2Canvas") as Canvas;
+            if (canvas2 != null)
+            {
+                CizgileriOlustur(canvas2);
+            }
         }
 
         /// <summary>
         /// Bina kat çizgilerini ve numaralarýný döngü ile Canvas üzerine yerleþtirir.
         /// Her kat için bir çizgi (Line) ve bir kat numarasý (TextBlock) oluþturur.
         /// </summary>
-        private void CizgileriOlustur()
+        private void CizgileriOlustur(Canvas canvas)
         {
+            if (canvas == null) return;
+
             // N, 0. kattan (zemin) baþlayýp 19. kata (en üst) kadar ilerler.
             for (int N = 0; N <= ToplamKatSayisi; N++)
             {
@@ -77,9 +95,9 @@ namespace elevator_simulation
                 // Kat numarasýnýn dikey konumunu ayarla (Canvas.Bottom)
                 Canvas.SetBottom(katNumarasi, textBottom);
 
-                // 3. Oluþturulan görsel öðeleri ana Canvas'a ekle
-                MainCanvas.Children.Add(katCizgisi);
-                MainCanvas.Children.Add(katNumarasi);
+                // 3. Oluþturulan görsel öðeleri Canvas'a ekle
+                canvas.Children.Add(katCizgisi);
+                canvas.Children.Add(katNumarasi);
             }
         }
     }
