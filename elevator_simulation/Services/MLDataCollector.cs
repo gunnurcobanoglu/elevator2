@@ -17,20 +17,40 @@ namespace elevator_simulation.Services
         {
             _csvFilePath = csvFilePath;
             
-            // Eðer dosya yoksa header yaz
-            if (!File.Exists(_csvFilePath))
+            // Eðer dosya varsa header'ý kontrol et
+            if (File.Exists(_csvFilePath))
             {
-                WriteHeader();
+                var firstLine = File.ReadLines(_csvFilePath).FirstOrDefault();
+                
+                // Eski format header'ý varsa dosyayý sil ve yeniden oluþtur
+                if (firstLine != null && 
+                    (firstLine.Contains("SimulationTime") || firstLine.Contains("Hour,Minute,PickupFloor")))
+                {
+                    // Eski format - dosyayý sil
+                    File.Delete(_csvFilePath);
+                    WriteHeader();
+                }
+                else if (firstLine != null && firstLine.Contains("Tarih,Saat"))
+                {
+                    // Yeni format - header zaten yazýlmýþ
+                    _headerWritten = true;
+                }
+                else
+                {
+                    // Header yok veya bozuk - yeniden yaz
+                    WriteHeader();
+                }
             }
             else
             {
-                _headerWritten = true;
+                // Dosya yok - oluþtur
+                WriteHeader();
             }
         }
 
         private void WriteHeader()
         {
-            var header = "SimulationTime,Hour,Minute,PickupFloor,ElevatorFloorAtRequest,WaitTimeSeconds,TotalPassengers,ElevatorState";
+            var header = "Tarih,Saat,Saat_Tam,Dakika,Cagri_Kat,Asansor_Kat,Bekleme_Saniye,Toplam_Yolcu,Asansor_Durum";
             File.WriteAllText(_csvFilePath, header + Environment.NewLine, Encoding.UTF8);
             _headerWritten = true;
         }
@@ -51,7 +71,11 @@ namespace elevator_simulation.Services
                 WriteHeader();
             }
 
-            var line = $"{simulationTime:hh\\:mm\\:ss},{simulationTime.Hours},{simulationTime.Minutes}," +
+            // Tarih ve saat formatýný düzenle
+            var date = DateTime.Now.ToString("yyyy-MM-dd");
+            var time = simulationTime.ToString(@"hh\:mm\:ss");
+            
+            var line = $"{date},{time},{simulationTime.Hours},{simulationTime.Minutes}," +
                        $"{pickupFloor},{elevatorFloorAtRequest},{waitTimeSeconds}," +
                        $"{totalPassengers},{elevatorState}";
 

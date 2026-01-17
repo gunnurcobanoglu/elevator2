@@ -14,6 +14,7 @@ namespace elevator_simulation.ViewModels
         private readonly MLDataCollector _mlDataCollector;
         private DateTime _simulationStartTime;
         private bool _isSimulationRunning;
+        private TimeSpan _currentSimulationTime;
 
         private int _currentFloor;
         private string _elevatorState;
@@ -81,6 +82,12 @@ namespace elevator_simulation.ViewModels
         }
 
         public bool HasPassenger => _passengerCount > 0;
+
+        public TimeSpan CurrentSimulationTime
+        {
+            get => _currentSimulationTime;
+            set => SetProperty(ref _currentSimulationTime, value);
+        }
 
         public bool IsInnerPanelOpen
         {
@@ -160,19 +167,19 @@ namespace elevator_simulation.ViewModels
                 }
 
                 var request = new PassengerRequest(callingFloor);
-                request.SimulationTime = TimeSpan.Zero; // MainWindow'dan alýnacak
+                request.SimulationTime = CurrentSimulationTime; // UI'dan alýnan gerçek saat
                 request.ElevatorFloorAtRequest = _currentFloor;
                 
                 _pendingRequests.Add(request);
 
-                AddStatusMessage($"Kat {callingFloor}: Çaðrý geldi");
+                AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Çaðrý geldi");
 
                 // ML VERÝ TOPLAMA: Ýstek kaydedildi
                 _mlDataCollector.RecordRequest(
-                    request.SimulationTime,
+                    CurrentSimulationTime,
                     callingFloor,
                     _currentFloor,
-                    0, // Wait time henüz belli deðil
+                    0, // Wait time henüz belli deðil - request tamamlandýðýnda güncellenecek
                     _passengerCount,
                     _elevatorState
                 );

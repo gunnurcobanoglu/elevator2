@@ -44,12 +44,33 @@ namespace elevator_simulation
             {
                 txtMinute.TextChanged += OnTimeChanged;
             }
+            
+            // Başlangıç saatini ayarla
+            UpdateSimulationTime();
         }
 
         private void OnTimeChanged(object sender, TextChangedEventArgs e)
         {
-            // Saat değiştiğinde veri sayacını güncelle
+            // Saat değiştiğinde ViewModel'i güncelle
+            UpdateSimulationTime();
             UpdateDataCountDisplay();
+        }
+
+        private void UpdateSimulationTime()
+        {
+            if (int.TryParse(txtHour.Text, out int hour) && 
+                int.TryParse(txtMinute.Text, out int minute))
+            {
+                if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                {
+                    // ViewModel'e simülasyon zamanını ilet
+                    var viewModel = DataContext as elevator_simulation.ViewModels.MainViewModel;
+                    if (viewModel != null)
+                    {
+                        viewModel.CurrentSimulationTime = new TimeSpan(hour, minute, 0);
+                    }
+                }
+            }
         }
 
         private void UpdateDataCountDisplay()
