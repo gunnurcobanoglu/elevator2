@@ -169,23 +169,21 @@ namespace elevator_simulation.ViewModels
                 var request = new PassengerRequest(callingFloor);
                 request.SimulationTime = CurrentSimulationTime; // UI'dan alýnan gerçek saat
                 request.ElevatorFloorAtRequest = _currentFloor;
+                request.RequestTime = DateTime.Now; // Gerçek zaman - bekleme süresi için
                 
                 _pendingRequests.Add(request);
 
                 AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Çaðrý geldi");
 
-                // ML VERÝ TOPLAMA: Sadece ilk çaðrýda kaydet (duplicates önlemek için)
-                if (_pendingRequests.Count == 1 && !_isProcessingRequests)
-                {
-                    _mlDataCollector.RecordRequest(
-                        CurrentSimulationTime,
-                        callingFloor,
-                        _currentFloor,
-                        0, // Wait time henüz belli deðil
-                        _passengerCount,
-                        _elevator.State.ToString() // Enum string olarak (Idle, MovingUp, MovingDown vb.)
-                    );
-                }
+                // ML VERÝ TOPLAMA: Her çaðrýda kaydet
+                _mlDataCollector.RecordRequest(
+                    CurrentSimulationTime,
+                    callingFloor,
+                    _currentFloor,
+                    0, // Bekleme süresi baþlangýçta 0 - asansör varýnca güncellenecek
+                    _passengerCount,
+                    _elevator.State.ToString()
+                );
 
                 if (!_isProcessingRequests)
                 {
@@ -370,6 +368,21 @@ namespace elevator_simulation.ViewModels
 
                 pickupRequest.Status = RequestStatus.PickedUp;
                 PassengerCount++;
+                
+                // BEKLEME SÜRESÝNÝ HESAPLA ve ML VERÝSÝNÝ KAYDET
+                var waitTimeSeconds = (int)(DateTime.Now - pickupRequest.RequestTime).TotalSeconds;
+                pickupRequest.WaitTimeSeconds = waitTimeSeconds;
+                
+                _mlDataCollector.RecordRequest(
+                    pickupRequest.SimulationTime,
+                    pickupRequest.PickupFloor,
+                    pickupRequest.ElevatorFloorAtRequest,
+                    waitTimeSeconds,
+                    _passengerCount - 1, // Bu yolcu binmeden önceki sayý
+                    "PickedUp" // Yolcu alýndý
+                );
+                
+                AddStatusMessage($"Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
                 
                 // Ýç paneli aç ve hedef seçilene kadar bekle
                 IsInnerPanelOpen = true;
