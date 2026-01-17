@@ -1,23 +1,29 @@
 using System.IO;
 using System.Text;
 using elevator_simulation.Models;
+using ClosedXML.Excel;
 
 namespace elevator_simulation.Services
 {
     /// <summary>
     /// Machine Learning için veri toplama servisi
-    /// CSV formatýnda eðitim verisi kaydeder
+    /// CSV ve Excel formatýnda eðitim verisi kaydeder
     /// </summary>
     public class MLDataCollector
     {
         private readonly string _csvFilePath;
+        private readonly string _excelFilePath;
         private bool _headerWritten = false;
+        private XLWorkbook? _workbook;
+        private IXLWorksheet? _worksheet;
+        private int _excelRowIndex = 2; // 1. satýr header
 
-        public MLDataCollector(string csvFilePath = "ml_training_data.csv")
+        public MLDataCollector(string csvFilePath = "ml_training_data.csv", string excelFilePath = "ml_training_data.xlsx")
         {
             _csvFilePath = csvFilePath;
+            _excelFilePath = excelFilePath;
             
-            // Eðer dosya varsa header'ý kontrol et
+            // CSV kontrolü
             if (File.Exists(_csvFilePath))
             {
                 var firstLine = File.ReadLines(_csvFilePath).FirstOrDefault();
@@ -26,29 +32,76 @@ namespace elevator_simulation.Services
                 if (firstLine != null && 
                     (firstLine.Contains("SimulationTime") || firstLine.Contains("Hour,Minute,PickupFloor")))
                 {
-                    // Eski format - dosyayý sil
                     File.Delete(_csvFilePath);
-                    WriteHeader();
+                    WriteCSVHeader();
                 }
                 else if (firstLine != null && firstLine.Contains("Tarih,Saat"))
                 {
-                    // Yeni format - header zaten yazýlmýþ
                     _headerWritten = true;
                 }
                 else
                 {
-                    // Header yok veya bozuk - yeniden yaz
-                    WriteHeader();
+                    WriteCSVHeader();
                 }
             }
             else
             {
-                // Dosya yok - oluþtur
-                WriteHeader();
+                WriteCSVHeader();
+            }
+            
+            // Excel dosyasý oluþtur veya aç
+            InitializeExcel();
+        }
+
+        private void InitializeExcel()
+        {
+            if (File.Exists(_excelFilePath))
+            {
+                try
+                {
+                    _workbook = new XLWorkbook(_excelFilePath);
+                    _worksheet = _workbook.Worksheet(1);
+                    _excelRowIndex = _worksheet.LastRowUsed()?.RowNumber() + 1 ?? 2;
+                }
+                catch
+                {
+                    // Dosya bozuksa yeniden oluþtur
+                    CreateNewExcelFile();
+                }
+            }
+            else
+            {
+                CreateNewExcelFile();
             }
         }
 
-        private void WriteHeader()
+        private void CreateNewExcelFile()
+        {
+            _workbook = new XLWorkbook();
+            _worksheet = _workbook.Worksheets.Add("ML Verisi");
+            
+            // Header'larý yaz
+            _worksheet.Cell(1, 1).Value = "Tarih";
+            _worksheet.Cell(1, 2).Value = "Saat";
+            _worksheet.Cell(1, 3).Value = "Saat (Tam)";
+            _worksheet.Cell(1, 4).Value = "Dakika";
+            _worksheet.Cell(1, 5).Value = "Çaðrý Kat";
+            _worksheet.Cell(1, 6).Value = "Asansör Kat";
+            _worksheet.Cell(1, 7).Value = "Bekleme (Saniye)";
+            _worksheet.Cell(1, 8).Value = "Toplam Yolcu";
+            _worksheet.Cell(1, 9).Value = "Asansör Durum";
+            
+            // Header'larý formatla
+            var headerRange = _worksheet.Range("A1:I1");
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            
+            _excelRowIndex = 2;
+            SaveExcel();
+        }
+
+        private void WriteCSVHeader()
         {
             var header = "Tarih,Saat,Saat_Tam,Dakika,Cagri_Kat,Asansor_Kat,Bekleme_Saniye,Toplam_Yolcu,Asansor_Durum";
             File.WriteAllText(_csvFilePath, header + Environment.NewLine, Encoding.UTF8);
@@ -56,7 +109,7 @@ namespace elevator_simulation.Services
         }
 
         /// <summary>
-        /// ML veri kaydý oluþtur
+        /// ML veri kaydý oluþtur - Hem CSV hem Excel'e yaz
         /// </summary>
         public void RecordRequest(
             TimeSpan simulationTime,
@@ -66,12 +119,12 @@ namespace elevator_simulation.Services
             int totalPassengers,
             string elevatorState)
         {
+            // CSV'ye kaydet
             if (!_headerWritten)
             {
-                WriteHeader();
+                WriteCSVHeader();
             }
 
-            // Tarih ve saat formatýný düzenle
             var date = DateTime.Now.ToString("yyyy-MM-dd");
             var time = simulationTime.ToString(@"hh\:mm\:ss");
             
@@ -80,6 +133,41 @@ namespace elevator_simulation.Services
                        $"{totalPassengers},{elevatorState}";
 
             File.AppendAllText(_csvFilePath, line + Environment.NewLine, Encoding.UTF8);
+            
+            // Excel'e kaydet
+            if (_worksheet != null)
+            {
+                _worksheet.Cell(_excelRowIndex, 1).Value = date;
+                _worksheet.Cell(_excelRowIndex, 2).Value = time;
+                _worksheet.Cell(_excelRowIndex, 3).Value = simulationTime.Hours;
+                _worksheet.Cell(_excelRowIndex, 4).Value = simulationTime.Minutes;
+                _worksheet.Cell(_excelRowIndex, 5).Value = pickupFloor;
+                _worksheet.Cell(_excelRowIndex, 6).Value = elevatorFloorAtRequest;
+                _worksheet.Cell(_excelRowIndex, 7).Value = waitTimeSeconds;
+                _worksheet.Cell(_excelRowIndex, 8).Value = totalPassengers;
+                _worksheet.Cell(_excelRowIndex, 9).Value = elevatorState;
+                
+                // Satýrlarý formatla (zebra striping)
+                if (_excelRowIndex % 2 == 0)
+                {
+                    _worksheet.Range($"A{_excelRowIndex}:I{_excelRowIndex}").Style.Fill.BackgroundColor = XLColor.LightGray;
+                }
+                
+                _excelRowIndex++;
+                SaveExcel();
+            }
+        }
+
+        private void SaveExcel()
+        {
+            try
+            {
+                _workbook?.SaveAs(_excelFilePath);
+            }
+            catch
+            {
+                // Dosya açýksa veya hata varsa sessizce geç
+            }
         }
 
         /// <summary>
@@ -87,12 +175,20 @@ namespace elevator_simulation.Services
         /// </summary>
         public void ClearData()
         {
+            // CSV temizle
             if (File.Exists(_csvFilePath))
             {
                 File.Delete(_csvFilePath);
             }
             _headerWritten = false;
-            WriteHeader();
+            WriteCSVHeader();
+            
+            // Excel temizle
+            if (File.Exists(_excelFilePath))
+            {
+                File.Delete(_excelFilePath);
+            }
+            CreateNewExcelFile();
         }
 
         /// <summary>
@@ -106,5 +202,15 @@ namespace elevator_simulation.Services
             var lines = File.ReadAllLines(_csvFilePath);
             return Math.Max(0, lines.Length - 1); // Header hariç
         }
+        
+        /// <summary>
+        /// Kaynaklarý temizle
+        /// </summary>
+        public void Dispose()
+        {
+            SaveExcel();
+            _workbook?.Dispose();
+        }
     }
 }
+
