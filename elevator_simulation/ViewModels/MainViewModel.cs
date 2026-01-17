@@ -239,15 +239,27 @@ namespace elevator_simulation.ViewModels
                         await Task.Delay(500);
                         continue;
                     }
+                    
+                    // DEBUG LOG
+                    AddStatusMessage($"[DEBUG] Yön belirlendi: {(currentDirection > 0 ? "Yukarý" : "Aþaðý")}, Mevcut kat: {_currentFloor}");
                 }
 
                 // Mevcut yöndeki tüm duraklarý al (dinamik - yeni çaðrýlar dahil)
                 var stopsInDirection = GetAllStopsInDirection(currentDirection);
+                
+                // DEBUG LOG
+                if (stopsInDirection.Any())
+                {
+                    AddStatusMessage($"[DEBUG] Duraklar: [{string.Join(", ", stopsInDirection)}]");
+                }
 
                 if (stopsInDirection.Any())
                 {
                     // Bir sonraki kata git (en yakýn)
                     var nextStop = stopsInDirection.First();
+                    
+                    // DEBUG LOG
+                    AddStatusMessage($"[DEBUG] Sonraki durak: {nextStop}");
                     
                     // Durumunu güncelle
                     _elevator.State = currentDirection > 0 
@@ -271,6 +283,7 @@ namespace elevator_simulation.ViewModels
                 else
                 {
                     // Bu yönde istek kalmadý - yön deðiþtir
+                    AddStatusMessage($"[DEBUG] Yönde istek kalmadý, yön sýfýrlanýyor");
                     currentDirection = 0;
                     _elevator.State = Models.ElevatorState.Idle;
                     ElevatorStateDisplay = "Beklemede";
