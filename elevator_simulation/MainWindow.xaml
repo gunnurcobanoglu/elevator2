@@ -287,12 +287,10 @@
 														</DataTemplate>
 													</ItemsControl.ItemTemplate>
 												</ItemsControl>
-												<TextBlock Text="{Binding PassengerCount}" FontSize="12" FontWeight="Bold" 
+											<TextBlock Text="{Binding PassengerCount}" FontSize="12" FontWeight="Bold" 
                                           Foreground="#00FF00" VerticalAlignment="Center" Margin="4,0,0,0"/>
-											</StackPanel>
-										</Border>
-
-												<!-- 🚨 ACİL DURUM BUTONU -->
+									</StackPanel>
+								</Border>
 												<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" 
 														   VerticalAlignment="Bottom" Margin="8,0,0,8">
 													<!-- Emergency Stop Button -->
