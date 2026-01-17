@@ -174,15 +174,18 @@ namespace elevator_simulation.ViewModels
 
                 AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Çaðrý geldi");
 
-                // ML VERÝ TOPLAMA: Ýstek kaydedildi
-                _mlDataCollector.RecordRequest(
-                    CurrentSimulationTime,
-                    callingFloor,
-                    _currentFloor,
-                    0, // Wait time henüz belli deðil - request tamamlandýðýnda güncellenecek
-                    _passengerCount,
-                    _elevatorState
-                );
+                // ML VERÝ TOPLAMA: Sadece ilk çaðrýda kaydet (duplicates önlemek için)
+                if (_pendingRequests.Count == 1 && !_isProcessingRequests)
+                {
+                    _mlDataCollector.RecordRequest(
+                        CurrentSimulationTime,
+                        callingFloor,
+                        _currentFloor,
+                        0, // Wait time henüz belli deðil
+                        _passengerCount,
+                        _elevator.State.ToString() // Enum string olarak (Idle, MovingUp, MovingDown vb.)
+                    );
+                }
 
                 if (!_isProcessingRequests)
                 {
