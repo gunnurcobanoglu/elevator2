@@ -1,0 +1,603 @@
+﻿<Window x:Class="elevator_simulation.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:elevator_simulation"
+        xmlns:vm="clr-namespace:elevator_simulation.ViewModels"
+        xmlns:conv="clr-namespace:elevator_simulation.Converters"
+        mc:Ignorable="d"
+        Title="Iki Asansor Yan Yana" Height="700" Width="2000">
+
+	<Window.Resources>
+		<conv:FloorToPositionConverter x:Key="FloorToPositionConverter"/>
+		<conv:FloorListPositionConverter x:Key="FloorListPositionConverter"/>
+		<conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+		<conv:PassengerStatusConverter x:Key="PassengerStatusConverter"/>
+		<conv:FloorEqualityConverter x:Key="FloorEqualityConverter"/>
+		<conv:DoorPositionConverter x:Key="DoorPositionConverter"/>
+	</Window.Resources>
+
+	<Window.DataContext>
+		<vm:MainViewModel />
+	</Window.DataContext>
+
+	<Grid Background="#0f0f0f">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="200"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="250"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- Sol Panel -->
+		<Border Grid.Column="0" Background="White" Margin="1" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<StackPanel Margin="10">
+				<TextBlock Text="ASANSORU CAGIR" FontSize="18" FontWeight="Heavy" 
+                          HorizontalAlignment="Center" Margin="0,0,0,5"/>
+				<TextBlock Text="(Katlardan Cagirma)" FontSize="11" 
+                          HorizontalAlignment="Center" Margin="0,0,0,10" Foreground="Gray"/>
+				<ScrollViewer VerticalScrollBarVisibility="Auto" Height="600">
+					<ItemsControl ItemsSource="{Binding Floors}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<StackPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Button Content="{Binding}" 
+                                        Command="{Binding DataContext.CallElevatorCommand, 
+                                                 RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Height="35" Margin="5" FontSize="14" FontWeight="Bold"
+                                        BorderThickness="0" Cursor="Hand">
+									<Button.Template>
+										<ControlTemplate TargetType="Button">
+											<Border Background="{TemplateBinding Background}" 
+                                                    CornerRadius="5" Padding="5">
+												<ContentPresenter HorizontalAlignment="Center" 
+                                                                VerticalAlignment="Center"/>
+											</Border>
+										</ControlTemplate>
+									</Button.Template>
+									<Button.Style>
+										<Style TargetType="Button">
+											<Setter Property="Background" Value="#Ffc0cb"/>
+											<Setter Property="Foreground" Value="Brown"/>
+											<Style.Triggers>
+												<DataTrigger Value="True">
+													<DataTrigger.Binding>
+														<MultiBinding Converter="{StaticResource FloorEqualityConverter}">
+															<Binding />
+															<Binding Path="DataContext.CurrentFloor" 
+                                                                    RelativeSource="{RelativeSource AncestorType=Window}"/>
+														</MultiBinding>
+													</DataTrigger.Binding>
+													<Setter Property="Background" Value="#4CAF50"/>
+												</DataTrigger>
+												<Trigger Property="IsMouseOver" Value="True">
+													<Setter Property="Background" Value="#fea9b8"/>
+												</Trigger>
+												<Trigger Property="IsEnabled" Value="False">
+													<Setter Property="Background" Value="#CCCCCC"/>
+													<Setter Property="Foreground" Value="Brown"/>
+												</Trigger>
+											</Style.Triggers>
+										</Style>
+									</Button.Style>
+								</Button>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</StackPanel>
+		</Border>
+
+		<!-- Orta Panel Asansor -->
+		<Border Grid.Column="1" Background="White" Margin="10" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+
+				<TextBlock Grid.Row="0" Text="IKI ASANSOR YAN YANA" 
+                          FontSize="24" FontWeight="Bold" 
+                          HorizontalAlignment="Center" Margin="0,20,0,20"
+                          Foreground="#68228b"/>
+
+				<Border Grid.Row="1" Margin="50,0,50,20" Background="#ffb6c1" 
+                       BorderBrush="Black" BorderThickness="2">
+					<Grid ClipToBounds="True">
+						<!-- Asansor Ray Sistemi (Sol) -->
+						<Rectangle Width="4" Fill="#2C2C2C" HorizontalAlignment="Left" Margin="40,0,0,0"/>
+						<Rectangle Width="2" Fill="#666666" HorizontalAlignment="Left" Margin="41,0,0,0" Opacity="0.5"/>
+
+						<!-- Asansor Ray Sistemi (Sag) -->
+						<Rectangle Width="4" Fill="#2C2C2C" HorizontalAlignment="Right" Margin="0,0,40,0"/>
+						<Rectangle Width="2" Fill="#666666" HorizontalAlignment="Right" Margin="0,0,41,0" Opacity="0.5"/>
+
+						<Canvas x:Name="MainCanvas" VerticalAlignment="Bottom" Height="1100">
+							<Canvas.RenderTransform>
+								<TranslateTransform Y="{Binding CurrentFloor, 
+                                    Converter={StaticResource FloorListPositionConverter}}"/>
+							</Canvas.RenderTransform>
+						</Canvas>
+
+						<!-- Asansor Kabini Ana Container -->
+						<Grid Width="230" Height="80" 
+                             VerticalAlignment="Bottom"
+                             HorizontalAlignment="Center">
+							<Grid.RenderTransform>
+								<TranslateTransform Y="{Binding CurrentFloor, 
+                                    Converter={StaticResource FloorToPositionConverter}}"/>
+							</Grid.RenderTransform>
+
+							<!-- Dis Metal Cerceve -->
+							<Border Background="#2C2C2C"
+                                   BorderBrush="#1A1A1A" 
+                                   BorderThickness="5"
+                                   CornerRadius="4">
+								<Border.Effect>
+									<DropShadowEffect BlurRadius="20" ShadowDepth="10" Opacity="0.7" Color="Black"/>
+								</Border.Effect>
+
+								<!-- Ic Yapilar (Tek Child) -->
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="28*"/>
+										<ColumnDefinition Width="27*"/>
+										<ColumnDefinition Width="165*"/>
+									</Grid.ColumnDefinitions>
+									<!-- Metal Parlama Efekti (Ust Cerceve) -->
+									<Border Height="10" VerticalAlignment="Top" Margin="0" 
+                                           CornerRadius="2,2,0,0" Grid.ColumnSpan="3">
+										<Border.Background>
+											<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+												<GradientStop Color="#888888" Offset="0"/>
+												<GradientStop Color="#444444" Offset="0.5"/>
+												<GradientStop Color="#2C2C2C" Offset="1"/>
+											</LinearGradientBrush>
+										</Border.Background>
+									</Border>
+
+									<!-- Metal Parlama Efekti (Sol Kenar) -->
+									<Border Width="8" HorizontalAlignment="Left" Margin="0,10,0,10">
+										<Border.Background>
+											<LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+												<GradientStop Color="#666666" Offset="0"/>
+												<GradientStop Color="#3C3C3C" Offset="0.5"/>
+												<GradientStop Color="#2C2C2C" Offset="1"/>
+											</LinearGradientBrush>
+										</Border.Background>
+									</Border>
+
+									<!-- Metal Parlama Efekti (Sag Kenar) -->
+									<Border Width="8" HorizontalAlignment="Left" Margin="157,10,0,10" Grid.Column="2">
+										<Border.Background>
+											<LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+												<GradientStop Color="#2C2C2C" Offset="0"/>
+												<GradientStop Color="#3C3C3C" Offset="0.5"/>
+												<GradientStop Color="#555555" Offset="1"/>
+											</LinearGradientBrush>
+										</Border.Background>
+									</Border>
+
+									<!-- Ic Panel Arka Plan -->
+									<Border Margin="5,5,5,5" Background="#cd6889" CornerRadius="2" ClipToBounds="True" Grid.ColumnSpan="3">
+										<Grid>
+											<!-- Dijital Kat Gosterge Paneli (Ust) -->
+											<Border Height="22" VerticalAlignment="Top" 
+                                                   Background="#0D0D0D" 
+                                                   BorderBrush="#333333" 
+                                                   BorderThickness="0,0,0,2">
+												<Grid>
+													<!-- LED Ekran Efekti -->
+													<Rectangle Fill="#1A1A1A" Opacity="0.8"/>
+													<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+														<TextBlock Text="FLOOR" FontSize="9" FontWeight="Bold" 
+                                                                  Foreground="#FF6B00" 
+                                                                  FontFamily="Consolas"
+                                                                  Margin="0,0,8,0" Opacity="0.7"/>
+														<Border Background="#000000" Padding="10,2" CornerRadius="3"
+                                                               BorderBrush="#FF6B00" BorderThickness="1.5">
+															<TextBlock Text="{Binding CurrentFloor}" 
+                                                                      FontSize="14" FontWeight="Bold" 
+                                                                      Foreground="#FF6B00" 
+                                                                      FontFamily="Consolas"
+                                                                      HorizontalAlignment="Center">
+																<TextBlock.Effect>
+																	<DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#FF6B00" Opacity="0.8"/>
+																</TextBlock.Effect>
+															</TextBlock>
+														</Border>
+													</StackPanel>
+												</Grid>
+											</Border>
+
+											<!-- Ana Asansor Alani -->
+											<Grid Margin="0,22,0,0">
+												<!-- Asansor Ici Zemin Efekti -->
+												<Rectangle Fill="#ba5a7c" Opacity="0.3" VerticalAlignment="Bottom" Height="8"/>
+
+												<!-- Ana Kat Numarasi Gosterimi -->
+												<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+													<TextBlock Text="{Binding CurrentFloor}" 
+                                                              FontSize="36" FontWeight="Black" 
+                                                              Foreground="#FFEB3B"
+                                                              HorizontalAlignment="Center">
+														<TextBlock.Effect>
+															<DropShadowEffect BlurRadius="6" ShadowDepth="3" Color="Black" Opacity="0.9"/>
+														</TextBlock.Effect>
+													</TextBlock>
+												</StackPanel>
+
+										<!-- Yolcu Gostergesi (LED Tarzı - Dinamik) -->
+										<Border Background="#1A1A1A" 
+                                                       CornerRadius="15" 
+                                                       Padding="8,4"
+                                                       HorizontalAlignment="Right" 
+                                                       VerticalAlignment="Top"
+                                                       Margin="0,5,8,0"
+                                                       BorderBrush="#00FF00"
+                                                       BorderThickness="1.5"
+                                                       Visibility="{Binding HasPassenger, 
+                                                           Converter={StaticResource BoolToVisibilityConverter}}">
+											<Border.Effect>
+												<DropShadowEffect BlurRadius="8" ShadowDepth="0" Color="#00FF00" Opacity="0.6"/>
+											</Border.Effect>
+											<StackPanel Orientation="Horizontal">
+												<ItemsControl ItemsSource="{Binding PassengerIcons}">
+													<ItemsControl.ItemsPanel>
+														<ItemsPanelTemplate>
+															<StackPanel Orientation="Horizontal"/>
+														</ItemsPanelTemplate>
+													</ItemsControl.ItemsPanel>
+													<ItemsControl.ItemTemplate>
+														<DataTemplate>
+															<TextBlock Text="&#x1F464;" FontSize="13" Foreground="#00FF00" Margin="1,0"/>
+														</DataTemplate>
+													</ItemsControl.ItemTemplate>
+												</ItemsControl>
+												<TextBlock Text="{Binding PassengerCount}" FontSize="12" FontWeight="Bold" 
+                                          Foreground="#00FF00" VerticalAlignment="Center" Margin="4,0,0,0"/>
+											</StackPanel>
+										</Border>
+
+												<!-- KAPI SiSTEMi -->
+												<!-- Sol Kapi -->
+												<Border Width="110" Height="60"
+                                                       Background="#6b044f"
+                                                       HorizontalAlignment="Left"
+                                                       Panel.ZIndex="10"
+                                                       BorderBrush="#4A0336" BorderThickness="0,0,2,0">
+													<Border.RenderTransform>
+														<TranslateTransform X="{Binding DoorOpenAmount, 
+                                                            Converter={StaticResource DoorPositionConverter}, 
+                                                            ConverterParameter=Left}"/>
+													</Border.RenderTransform>
+													<Grid>
+														<!-- Kapi Paneli Dikey Cizgileri -->
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Left" Margin="12,0,0,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Left" Margin="12,0,0,0" Opacity="0.5"/>
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Left" Margin="28,0,0,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Left" Margin="28,0,0,0" Opacity="0.5"/>
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Left" Margin="44,0,0,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Left" Margin="44,0,0,0" Opacity="0.5"/>
+
+														<!-- Kapi Ayrac� (Metal Cerceve) -->
+														<Rectangle Width="4" Fill="#3A0226" HorizontalAlignment="Right"/>
+														<Rectangle Width="1" Fill="#8B1A5A" HorizontalAlignment="Right" Margin="0,0,1,0"/>
+
+														<!-- Kapi Kolu (Altin Metal) -->
+														<Border Width="7" Height="25" 
+                                                               CornerRadius="3.5"
+                                                               HorizontalAlignment="Right" 
+                                                               VerticalAlignment="Center" 
+                                                               Margin="0,0,12,0">
+															<Border.Background>
+																<LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+																	<GradientStop Color="#DAA520" Offset="0"/>
+																	<GradientStop Color="#FFD700" Offset="0.5"/>
+																	<GradientStop Color="#B8860B" Offset="1"/>
+																</LinearGradientBrush>
+															</Border.Background>
+															<Border.Effect>
+																<DropShadowEffect BlurRadius="4" ShadowDepth="2" Opacity="0.6" Color="Black"/>
+															</Border.Effect>
+														</Border>
+													</Grid>
+												</Border>
+
+												<!-- Sag Kapi -->
+												<Border Width="110" Height="60"
+                                                       Background="#6b044f"
+                                                       HorizontalAlignment="Right"
+                                                       Panel.ZIndex="10"
+                                                       BorderBrush="#4A0336" BorderThickness="2,0,0,0">
+													<Border.RenderTransform>
+														<TranslateTransform X="{Binding DoorOpenAmount, 
+                                                            Converter={StaticResource DoorPositionConverter}, 
+                                                            ConverterParameter=Right}"/>
+													</Border.RenderTransform>
+													<Grid>
+														<!-- Kapi Paneli Dikey Cizgileri -->
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Right" Margin="0,0,12,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Right" Margin="0,0,12,0" Opacity="0.5"/>
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Right" Margin="0,0,28,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Right" Margin="0,0,28,0" Opacity="0.5"/>
+														<Rectangle Width="3" Fill="#8B1A5A" HorizontalAlignment="Right" Margin="0,0,44,0"/>
+														<Rectangle Width="2" Fill="#A52A6A" HorizontalAlignment="Right" Margin="0,0,44,0" Opacity="0.5"/>
+
+														<!-- Kapi Ayrac� (Metal Cerceve) -->
+														<Rectangle Width="4" Fill="#3A0226" HorizontalAlignment="Left"/>
+														<Rectangle Width="1" Fill="#8B1A5A" HorizontalAlignment="Left" Margin="1,0,0,0"/>
+
+														<!-- Kapi Kolu (Altin Metal) -->
+														<Border Width="7" Height="25" 
+                                                               CornerRadius="3.5"
+                                                               HorizontalAlignment="Left" 
+                                                               VerticalAlignment="Center" 
+                                                               Margin="12,0,0,0">
+															<Border.Background>
+																<LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+																	<GradientStop Color="#B8860B" Offset="0"/>
+																	<GradientStop Color="#FFD700" Offset="0.5"/>
+																	<GradientStop Color="#DAA520" Offset="1"/>
+																</LinearGradientBrush>
+															</Border.Background>
+															<Border.Effect>
+																<DropShadowEffect BlurRadius="4" ShadowDepth="2" Opacity="0.6" Color="Black"/>
+															</Border.Effect>
+														</Border>
+													</Grid>
+												</Border>
+											</Grid>
+										</Grid>
+									</Border>
+
+									<!-- Alt Metal Tampon/Koruma -->
+									<Border Height="5" VerticalAlignment="Bottom" 
+                                           Margin="0" Grid.ColumnSpan="3">
+										<Border.Background>
+											<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+												<GradientStop Color="#3C3C3C" Offset="0"/>
+												<GradientStop Color="#1A1A1A" Offset="1"/>
+											</LinearGradientBrush>
+										</Border.Background>
+										<Border.Effect>
+											<DropShadowEffect BlurRadius="4" ShadowDepth="3" Opacity="0.4"/>
+										</Border.Effect>
+									</Border>
+								</Grid>
+							</Border>
+
+							<!-- Metal Cerceve Vidalari/Civatalar (4 Kose) -->
+							<Ellipse Width="8" Height="8" Fill="#4A4A4A" 
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" 
+                                    Margin="8,8,0,0"
+                                    Stroke="#666666" StrokeThickness="1">
+								<Ellipse.Effect>
+									<DropShadowEffect BlurRadius="3" ShadowDepth="2" Opacity="0.6"/>
+								</Ellipse.Effect>
+							</Ellipse>
+							<Ellipse Width="3" Height="3" Fill="#222222" 
+                                    HorizontalAlignment="Left" VerticalAlignment="Top" 
+                                    Margin="10.5,10.5,0,0"/>
+
+							<Ellipse Width="8" Height="8" Fill="#4A4A4A" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" 
+                                    Margin="0,8,8,0"
+                                    Stroke="#666666" StrokeThickness="1">
+								<Ellipse.Effect>
+									<DropShadowEffect BlurRadius="3" ShadowDepth="2" Opacity="0.6"/>
+								</Ellipse.Effect>
+							</Ellipse>
+							<Ellipse Width="3" Height="3" Fill="#222222" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" 
+                                    Margin="0,10.5,10.5,0"/>
+
+							<Ellipse Width="8" Height="8" Fill="#4A4A4A" 
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" 
+                                    Margin="8,0,0,8"
+                                    Stroke="#666666" StrokeThickness="1">
+								<Ellipse.Effect>
+									<DropShadowEffect BlurRadius="3" ShadowDepth="2" Opacity="0.6"/>
+								</Ellipse.Effect>
+							</Ellipse>
+							<Ellipse Width="3" Height="3" Fill="#222222" 
+                                    HorizontalAlignment="Left" VerticalAlignment="Bottom" 
+                                    Margin="10.5,0,0,10.5"/>
+
+							<Ellipse Width="8" Height="8" Fill="#4A4A4A" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                                    Margin="0,0,8,8"
+                                    Stroke="#666666" StrokeThickness="1">
+								<Ellipse.Effect>
+									<DropShadowEffect BlurRadius="3" ShadowDepth="2" Opacity="0.6"/>
+								</Ellipse.Effect>
+							</Ellipse>
+							<Ellipse Width="3" Height="3" Fill="#222222" 
+                                    HorizontalAlignment="Right" VerticalAlignment="Bottom" 
+                                    Margin="0,0,10.5,10.5"/>
+						</Grid>
+					</Grid>
+				</Border>
+			</Grid>
+		</Border>
+
+		<!-- Sag Panel -->
+		<Border Grid.Column="2" Background="White" Margin="10" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<StackPanel Margin="20">
+				<TextBlock Text="BILGI PANELI" FontSize="18" FontWeight="Bold" 
+                          HorizontalAlignment="Center" Margin="0,0,0,20"
+                          Foreground="#2196F3"/>
+
+				<Border Background="#E3F2FD" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mevcut Durum:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#1976D2" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding ElevatorStateDisplay}" FontSize="16" 
+                                  Foreground="#424242" TextWrapping="Wrap"/>
+					</StackPanel>
+				</Border>
+
+				<Border Background="#E8F5E9" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mevcut Kat:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#388E3C" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding CurrentFloor}" FontSize="28" 
+                                  FontWeight="Bold" Foreground="#4CAF50" 
+                                  HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Border>
+
+				<Border Background="#FFF3E0" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Yolcu Durumu:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#F57C00" Margin="0,0,0,5"/>
+						<TextBlock FontSize="16" Foreground="#424242">
+                            <Run Text="&#x1F464;"/>
+                            <Run Text="{Binding HasPassenger, 
+                                Converter={StaticResource PassengerStatusConverter}, Mode=OneWay}"/>
+						</TextBlock>
+					</StackPanel>
+				</Border>
+
+				<Border Background="#F3E5F5" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Toplam Simulasyon Suresi:" FontSize="14" 
+                                  FontWeight="Bold" Foreground="#7B1FA2" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding TotalTime}" FontSize="20" 
+                                  FontWeight="Bold" Foreground="#9C27B0" 
+                                  HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Border>
+
+				<Border Background="#FFEBEE" CornerRadius="5" Padding="10" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mesaj Geçmişi:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#C62828" Margin="0,0,0,5"/>
+						<ScrollViewer Height="120" VerticalScrollBarVisibility="Auto" 
+                                     HorizontalScrollBarVisibility="Disabled">
+							<TextBlock Text="{Binding StatusMessage}" FontSize="11" 
+                                      Foreground="#424242" TextWrapping="Wrap" LineHeight="16"/>
+						</ScrollViewer>
+					</StackPanel>
+				</Border>
+
+				<Border Background="#FAFAFA" CornerRadius="5" Padding="15" Margin="0,20,0,0"
+                       BorderBrush="#E0E0E0" BorderThickness="1">
+					<StackPanel>
+						<TextBlock Text="Bilgi" FontSize="12" FontWeight="Bold" 
+                                  Margin="0,0,0,5"/>
+						<TextBlock FontSize="11" Foreground="Brown" TextWrapping="Wrap">
+                            <Run Text="Kat degisimi: 1 sn"/>
+                            <LineBreak/>
+                            <Run Text="Kapi acma/kapama: 0.5 sn"/>
+                            <LineBreak/>
+                            <Run Text="Bekleme suresi: 2 sn"/>
+						</TextBlock>
+					</StackPanel>
+				</Border>
+			</StackPanel>
+		</Border>
+
+		<!-- IC PANEL POPUP -->
+		<Border Grid.ColumnSpan="3" 
+                Background="#80000000" 
+                Visibility="{Binding IsInnerPanelOpen, Converter={StaticResource BoolToVisibilityConverter}}"
+                Panel.ZIndex="1000">
+			<Border Background="White" 
+                    Width="400" Height="500"
+                    CornerRadius="10"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+				<Border.Effect>
+					<DropShadowEffect BlurRadius="20" ShadowDepth="5" Opacity="0.5"/>
+				</Border.Effect>
+				<Grid Margin="20">
+					<Grid.RowDefinitions>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="*"/>
+					</Grid.RowDefinitions>
+
+					<StackPanel Grid.Row="0" Margin="0,0,0,20">
+						<TextBlock Text="ASANSOR ICI TUS TAKIMI" 
+                                  FontSize="20" FontWeight="Bold" 
+                                  HorizontalAlignment="Center"
+                                  Foreground="#68228b"/>
+						<TextBlock Text="Hedef kati secin" 
+                                  FontSize="14" 
+                                  HorizontalAlignment="Center"
+                                  Foreground="Gray"
+                                  Margin="0,5,0,0"/>
+					</StackPanel>
+
+					<ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+						<ItemsControl ItemsSource="{Binding Floors}">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<UniformGrid Columns="4" />
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Button Content="{Binding}" 
+                                            Command="{Binding DataContext.SelectDestinationCommand, 
+                                                     RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}"
+                                            Height="60" Margin="5" 
+                                            FontSize="18" FontWeight="Bold"
+                                            BorderThickness="2" Cursor="Hand">
+										<Button.Style>
+											<Style TargetType="Button">
+												<Setter Property="Background" Value="#E8F5E9"/>
+												<Setter Property="Foreground" Value="#2E7D32"/>
+												<Setter Property="BorderBrush" Value="#4CAF50"/>
+												<Setter Property="Template">
+													<Setter.Value>
+														<ControlTemplate TargetType="Button">
+															<Border Background="{TemplateBinding Background}" 
+                                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                                    CornerRadius="8">
+																<ContentPresenter HorizontalAlignment="Center" 
+                                                                                VerticalAlignment="Center"/>
+															</Border>
+														</ControlTemplate>
+													</Setter.Value>
+												</Setter>
+												<Style.Triggers>
+													<Trigger Property="IsMouseOver" Value="True">
+														<Setter Property="Background" Value="#4CAF50"/>
+														<Setter Property="Foreground" Value="White"/>
+													</Trigger>
+													<Trigger Property="IsEnabled" Value="False">
+														<Setter Property="Background" Value="#EEEEEE"/>
+														<Setter Property="Foreground" Value="#999999"/>
+														<Setter Property="BorderBrush" Value="#CCCCCC"/>
+													</Trigger>
+												</Style.Triggers>
+											</Style>
+										</Button.Style>
+									</Button>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</ScrollViewer>
+				</Grid>
+			</Border>
+		</Border>
+	</Grid>
+</Window>
+

@@ -20,3 +20,13 @@ C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\ne
 C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.pdb
 C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.genruntimeconfig.cache
 C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\net8.0-windows\ref\elevator_simulation.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\ClosedXML.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\ClosedXML.Parser.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\DocumentFormat.OpenXml.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\DocumentFormat.OpenXml.Framework.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\ExcelNumberFormat.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\RBush.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\SixLabors.Fonts.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\bin\Debug\net8.0-windows\System.IO.Packaging.dll
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\net8.0-windows\elevator_simulation.csproj.AssemblyReference.cache
+C:\Users\LENOVO\source\repos\ElevatorSimulation\elevator_simulation\obj\Debug\net8.0-windows\elevator.B9E800FE.Up2Date
