@@ -3,6 +3,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using elevator_simulation.Commands;
 using elevator_simulation.Models;
+using elevator_simulation.Services;
 
 namespace elevator_simulation.ViewModels
 {
@@ -10,6 +11,7 @@ namespace elevator_simulation.ViewModels
     {
         private readonly ElevatorModel _elevator;
         private readonly DispatcherTimer _timer;
+        private readonly MLDataCollector _mlDataCollector;
         private DateTime _simulationStartTime;
         private bool _isSimulationRunning;
 
@@ -95,6 +97,7 @@ namespace elevator_simulation.ViewModels
         public MainViewModel()
         {
             _elevator = new ElevatorModel();
+            _mlDataCollector = new MLDataCollector();
             Floors = new ObservableCollection<int>();
             _passengerIcons = new ObservableCollection<int>();
             
@@ -157,9 +160,22 @@ namespace elevator_simulation.ViewModels
                 }
 
                 var request = new PassengerRequest(callingFloor);
+                request.SimulationTime = TimeSpan.Zero; // MainWindow'dan alýnacak
+                request.ElevatorFloorAtRequest = _currentFloor;
+                
                 _pendingRequests.Add(request);
 
                 AddStatusMessage($"Kat {callingFloor}: Çaðrý geldi");
+
+                // ML VERÝ TOPLAMA: Ýstek kaydedildi
+                _mlDataCollector.RecordRequest(
+                    request.SimulationTime,
+                    callingFloor,
+                    _currentFloor,
+                    0, // Wait time henüz belli deðil
+                    _passengerCount,
+                    _elevatorState
+                );
 
                 if (!_isProcessingRequests)
                 {

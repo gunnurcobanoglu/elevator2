@@ -25,18 +25,50 @@ namespace elevator_simulation
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Asansör 1 Canvas
-            var canvas1 = FindName("Elevator1Canvas") as Canvas;
-            if (canvas1 != null)
+            // Kat çizgilerini oluþtur
+            var canvas = FindName("MainCanvas") as Canvas;
+            if (canvas != null)
             {
-                CizgileriOlustur(canvas1);
+                CizgileriOlustur(canvas);
             }
-
-            // Asansör 2 Canvas
-            var canvas2 = FindName("Elevator2Canvas") as Canvas;
-            if (canvas2 != null)
+            
+            // ML veri sayacýný güncelle
+            UpdateDataCountDisplay();
+            
+            // Saat deðiþikliklerini dinle
+            if (txtHour != null)
             {
-                CizgileriOlustur(canvas2);
+                txtHour.TextChanged += OnTimeChanged;
+            }
+            if (txtMinute != null)
+            {
+                txtMinute.TextChanged += OnTimeChanged;
+            }
+        }
+
+        private void OnTimeChanged(object sender, TextChangedEventArgs e)
+        {
+            // Saat deðiþtiðinde veri sayacýný güncelle
+            UpdateDataCountDisplay();
+        }
+
+        private void UpdateDataCountDisplay()
+        {
+            try
+            {
+                var collector = new Services.MLDataCollector();
+                int count = collector.GetRecordCount();
+                if (txtDataCount != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        txtDataCount.Text = $"Toplanan Veri: {count}";
+                    });
+                }
+            }
+            catch
+            {
+                // Hata durumunda sessizce geç
             }
         }
 
@@ -46,8 +78,12 @@ namespace elevator_simulation
         /// </summary>
         private void CizgileriOlustur(Canvas canvas)
         {
-            if (canvas == null) return;
-
+            if (canvas == null)
+            {
+                // Eðer parametre null ise MainCanvas'ý kullan
+                canvas = MainCanvas;
+            }
+            
             // N, 0. kattan (zemin) baþlayýp 19. kata (en üst) kadar ilerler.
             for (int N = 0; N <= ToplamKatSayisi; N++)
             {
