@@ -292,6 +292,87 @@
 											</StackPanel>
 										</Border>
 
+												<!-- 🚨 ACİL DURUM BUTONU -->
+												<StackPanel Orientation="Horizontal" HorizontalAlignment="Left" 
+														   VerticalAlignment="Bottom" Margin="8,0,0,8">
+													<!-- Emergency Stop Button -->
+													<Button Command="{Binding EmergencyStopCommand}"
+														   Width="35" Height="35"
+														   Cursor="Hand"
+														   ToolTip="Acil Durum - Asansörü Durdur"
+														   Visibility="{Binding IsEmergencyMode, 
+																Converter={StaticResource BoolToVisibilityConverter},
+																ConverterParameter=Inverse}">
+														<Button.Style>
+															<Style TargetType="Button">
+																<Setter Property="Background" Value="#DC143C"/>
+																<Setter Property="BorderBrush" Value="#8B0000"/>
+																<Setter Property="BorderThickness" Value="2"/>
+																<Setter Property="Template">
+																	<Setter.Value>
+																		<ControlTemplate TargetType="Button">
+																			<Border Background="{TemplateBinding Background}"
+																				   BorderBrush="{TemplateBinding BorderBrush}"
+																				   BorderThickness="{TemplateBinding BorderThickness}"
+																				   CornerRadius="18">
+																				<Viewbox Width="20" Height="20">
+																					<TextBlock Text="🚨" FontSize="20" 
+																							  HorizontalAlignment="Center"
+																							  VerticalAlignment="Center"/>
+																				</Viewbox>
+																			</Border>
+																		</ControlTemplate>
+																	</Setter.Value>
+																</Setter>
+																<Style.Triggers>
+																	<Trigger Property="IsMouseOver" Value="True">
+																		<Setter Property="Background" Value="#FF1744"/>
+																	</Trigger>
+																</Style.Triggers>
+															</Style>
+														</Button.Style>
+													</Button>
+
+													<!-- Reset Button -->
+													<Button Command="{Binding ResetEmergencyCommand}"
+														   Width="35" Height="35"
+														   Margin="5,0,0,0"
+														   Cursor="Hand"
+														   ToolTip="Acil Durumu Sıfırla"
+														   Visibility="{Binding IsEmergencyMode, 
+																Converter={StaticResource BoolToVisibilityConverter}}">
+														<Button.Style>
+															<Style TargetType="Button">
+																<Setter Property="Background" Value="#4CAF50"/>
+																<Setter Property="BorderBrush" Value="#2E7D32"/>
+																<Setter Property="BorderThickness" Value="2"/>
+																<Setter Property="Template">
+																	<Setter.Value>
+																		<ControlTemplate TargetType="Button">
+																			<Border Background="{TemplateBinding Background}"
+																				   BorderBrush="{TemplateBinding BorderBrush}"
+																				   BorderThickness="{TemplateBinding BorderThickness}"
+																				   CornerRadius="18">
+																				<Viewbox Width="20" Height="20">
+																					<TextBlock Text="✓" FontSize="20" FontWeight="Bold"
+																							  Foreground="White"
+																							  HorizontalAlignment="Center"
+																							  VerticalAlignment="Center"/>
+																				</Viewbox>
+																			</Border>
+																		</ControlTemplate>
+																	</Setter.Value>
+																</Setter>
+																<Style.Triggers>
+																	<Trigger Property="IsMouseOver" Value="True">
+																		<Setter Property="Background" Value="#66BB6A"/>
+																	</Trigger>
+																</Style.Triggers>
+															</Style>
+														</Button.Style>
+													</Button>
+												</StackPanel>
+
 												<!-- KAPI SiSTEMi -->
 												<!-- Sol Kapi -->
 												<Border Width="110" Height="60"

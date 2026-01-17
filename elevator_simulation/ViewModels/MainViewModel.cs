@@ -25,6 +25,7 @@ namespace elevator_simulation.ViewModels
         private double _doorOpenAmount;
         private bool _isProcessingRequests;
         private ObservableCollection<int> _passengerIcons;
+        private bool _isEmergencyMode;
 
         // Yolcu istekleri ve hedefler
         private readonly List<PassengerRequest> _pendingRequests = new();
@@ -39,6 +40,14 @@ namespace elevator_simulation.ViewModels
         }
         public ICommand CallElevatorCommand { get; }
         public ICommand SelectDestinationCommand { get; }
+        public ICommand EmergencyStopCommand { get; }
+        public ICommand ResetEmergencyCommand { get; }
+
+        public bool IsEmergencyMode
+        {
+            get => _isEmergencyMode;
+            set => SetProperty(ref _isEmergencyMode, value);
+        }
 
         public int CurrentFloor
         {
@@ -115,6 +124,8 @@ namespace elevator_simulation.ViewModels
 
             CallElevatorCommand = new RelayCommand(OnCallElevator, CanCallElevator);
             SelectDestinationCommand = new RelayCommand(OnSelectDestination, CanSelectDestination);
+            EmergencyStopCommand = new RelayCommand(OnEmergencyStop, CanEmergencyStop);
+            ResetEmergencyCommand = new RelayCommand(OnResetEmergency, CanResetEmergency);
 
             _timer = new DispatcherTimer
             {
@@ -226,6 +237,13 @@ namespace elevator_simulation.ViewModels
             while (_pendingRequests.Any(r => r.Status != RequestStatus.Completed) || 
                    _destinationFloors.Count > 0)
             {
+                // ?? ACÝL DURUM KONTROLÜ
+                if (_isEmergencyMode)
+                {
+                    await Task.Delay(500);
+                    continue; // Acil durumdaysa hareket etme
+                }
+
                 // Her adýmda yönü ve hedefi yeniden hesapla
                 var direction = DetermineDirection();
 
@@ -482,6 +500,37 @@ namespace elevator_simulation.ViewModels
                 var elapsed = DateTime.Now - _simulationStartTime;
                 TotalTime = elapsed.ToString(@"hh\:mm\:ss");
             }
+        }
+
+        // ?? ACÝL DURUM METOD
+        private bool CanEmergencyStop(object? parameter)
+        {
+            return !_isEmergencyMode; // Zaten acil durumdaysa basýlamaz
+        }
+
+        private void OnEmergencyStop(object? parameter)
+        {
+            IsEmergencyMode = true;
+            _elevator.State = Models.ElevatorState.Idle;
+            ElevatorStateDisplay = "?? ACÝL DURUM!";
+            AddStatusMessage($"[ACÝL DURUM] Asansör kat {_currentFloor}'da durduruldu!");
+            
+            // Ýstekleri temizleme (opsiyonel)
+            // _pendingRequests.Clear();
+            // _destinationFloors.Clear();
+        }
+
+        private bool CanResetEmergency(object? parameter)
+        {
+            return _isEmergencyMode; // Sadece acil durumdayken resetlenebilir
+        }
+
+        private void OnResetEmergency(object? parameter)
+        {
+            IsEmergencyMode = false;
+            _elevator.State = Models.ElevatorState.Idle;
+            ElevatorStateDisplay = "Beklemede";
+            AddStatusMessage($"[SÝSTEM] Acil durum sýfýrlandý. Asansör kat {_currentFloor}'da hazýr.");
         }
     }
 }
