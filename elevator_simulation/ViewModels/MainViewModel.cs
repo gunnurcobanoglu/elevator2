@@ -222,30 +222,42 @@ namespace elevator_simulation.ViewModels
         private async Task ProcessRequests()
         {
             _isProcessingRequests = true;
+            int currentDirection = 0; // 0: Idle, 1: Yukarý, -1: Aþaðý
 
             while (_pendingRequests.Any(r => r.Status != RequestStatus.Completed) || 
                    _destinationFloors.Count > 0)
             {
-                var direction = DetermineDirection();
-
-                if (direction == 0)
+                // Yön belirleme: Sadece idle'dayken veya o yönde istek kalmadýðýnda deðiþtir
+                if (currentDirection == 0)
                 {
-                    _elevator.State = Models.ElevatorState.Idle;
-                    ElevatorStateDisplay = "Beklemede";
-                    await Task.Delay(500);
-                    continue;
+                    currentDirection = DetermineDirection();
+                    
+                    if (currentDirection == 0)
+                    {
+                        _elevator.State = Models.ElevatorState.Idle;
+                        ElevatorStateDisplay = "Beklemede";
+                        await Task.Delay(500);
+                        continue;
+                    }
                 }
 
-                // HER ADIMDA durak listesini yeniden hesapla (dinamik SCAN)
-                var stopsInDirection = GetAllStopsInDirection(direction);
+                // Mevcut yöndeki tüm duraklarý al (dinamik - yeni çaðrýlar dahil)
+                var stopsInDirection = GetAllStopsInDirection(currentDirection);
 
                 if (stopsInDirection.Any())
                 {
-                    // Sadece bir sonraki kata git (en yakýn)
+                    // Bir sonraki kata git (en yakýn)
                     var nextStop = stopsInDirection.First();
+                    
+                    // Durumunu güncelle
+                    _elevator.State = currentDirection > 0 
+                        ? Models.ElevatorState.MovingUp 
+                        : Models.ElevatorState.MovingDown;
+                    ElevatorStateDisplay = currentDirection > 0 ? "Yukarý Gidiyor" : "Aþaðý Gidiyor";
                     
                     await MoveToFloor(nextStop);
 
+                    // Bu katta durulmasý gerekiyor mu?
                     bool hasDropOff = _destinationFloors.Contains(nextStop);
                     var pickupRequests = _pendingRequests
                         .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
@@ -258,6 +270,11 @@ namespace elevator_simulation.ViewModels
                 }
                 else
                 {
+                    // Bu yönde istek kalmadý - yön deðiþtir
+                    currentDirection = 0;
+                    _elevator.State = Models.ElevatorState.Idle;
+                    ElevatorStateDisplay = "Beklemede";
+                    AddStatusMessage($"Kat {_currentFloor}: Yön deðiþtiriliyor");
                     await Task.Delay(100);
                 }
             }
