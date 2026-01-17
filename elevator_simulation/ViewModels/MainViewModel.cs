@@ -236,23 +236,24 @@ namespace elevator_simulation.ViewModels
                     continue;
                 }
 
+                // HER ADIMDA durak listesini yeniden hesapla (dinamik SCAN)
                 var stopsInDirection = GetAllStopsInDirection(direction);
 
                 if (stopsInDirection.Any())
                 {
-                    foreach (var stop in stopsInDirection)
+                    // Sadece bir sonraki kata git (en yakýn)
+                    var nextStop = stopsInDirection.First();
+                    
+                    await MoveToFloor(nextStop);
+
+                    bool hasDropOff = _destinationFloors.Contains(nextStop);
+                    var pickupRequests = _pendingRequests
+                        .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
+                        .ToList();
+
+                    if (hasDropOff || pickupRequests.Any())
                     {
-                        await MoveToFloor(stop);
-
-                        bool hasDropOff = _destinationFloors.Contains(stop);
-                        var pickupRequests = _pendingRequests
-                            .Where(r => r.PickupFloor == stop && r.Status == RequestStatus.Pending)
-                            .ToList();
-
-                        if (hasDropOff || pickupRequests.Any())
-                        {
-                            await HandleStopOperations(stop, hasDropOff, pickupRequests);
-                        }
+                        await HandleStopOperations(nextStop, hasDropOff, pickupRequests);
                     }
                 }
                 else
