@@ -52,11 +52,7 @@ namespace elevator_simulation.Converters
         {
             if (value is bool boolValue)
             {
-                // Inverse parametresi varsa tersini al
-                bool isInverse = parameter != null && parameter.ToString() == "Inverse";
-                bool result = isInverse ? !boolValue : boolValue;
-                
-                return result ? Visibility.Visible : Visibility.Collapsed;
+                return boolValue ? Visibility.Visible : Visibility.Collapsed;
             }
             return Visibility.Collapsed;
         }

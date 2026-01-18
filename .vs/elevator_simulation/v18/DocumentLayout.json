@@ -3,6 +3,10 @@
   "WorkspaceRootPath": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
@@ -36,10 +40,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\models\\elevatormodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\models\\elevatormodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -49,11 +49,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "MLDataCollector.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Services\\MLDataCollector.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\Services\\MLDataCollector.cs",
@@ -61,12 +61,11 @@
               "RelativeToolTip": "elevator_simulation\\Services\\MLDataCollector.cs",
               "ViewState": "AgIAAMIAAAAAAAAAAAAwwNgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-17T12:22:37.143Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-17T12:22:37.143Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "PassengerRequest.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Models\\PassengerRequest.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\Models\\PassengerRequest.cs",
@@ -74,25 +73,24 @@
               "RelativeToolTip": "elevator_simulation\\Models\\PassengerRequest.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-21T21:00:12.232Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-21T21:00:12.232Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 0,
               "Title": "MainWindow.xaml.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\MainWindow.xaml.cs",
               "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml.cs",
               "RelativeToolTip": "elevator_simulation\\MainWindow.xaml.cs",
-              "ViewState": "AgIAACQAAAAAAAAAAAD4v6EAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAbAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-22T15:18:13.834Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml",
               "RelativeDocumentMoniker": "elevator_simulation\\MainWindow.xaml",
@@ -104,7 +102,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "XamlReader.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\.vsdbgsrc\\aad6be2495d0a786b94b3514a5b6903407fe2d6a75ad7e505df6a9d895927867\\XamlReader.cs",
               "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\Temp\\.vsdbgsrc\\aad6be2495d0a786b94b3514a5b6903407fe2d6a75ad7e505df6a9d895927867\\XamlReader.cs",
@@ -112,25 +110,24 @@
               "RelativeToolTip": "..\\..\\..\\AppData\\Local\\Temp\\.vsdbgsrc\\aad6be2495d0a786b94b3514a5b6903407fe2d6a75ad7e505df6a9d895927867\\XamlReader.cs",
               "ViewState": "AgIAAKkBAAAAAAAAAAAawKsBAAAUAAAAAQAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-21T21:11:50.323Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-21T21:11:50.323Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 5,
               "Title": "MainViewModel.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\ViewModels\\MainViewModel.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\ViewModels\\MainViewModel.cs",
               "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\ViewModels\\MainViewModel.cs",
               "RelativeToolTip": "elevator_simulation\\ViewModels\\MainViewModel.cs",
-              "ViewState": "AgIAAOgAAAAAAAAAAAAAwOcBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAMAAAAAAAAAAAIBJwC4CAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-22T15:10:58.227Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "ViewModelBase.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\ViewModels\\ViewModelBase.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\ViewModels\\ViewModelBase.cs",
@@ -138,25 +135,23 @@
               "RelativeToolTip": "elevator_simulation\\ViewModels\\ViewModelBase.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T17:22:09.819Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T17:22:09.819Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "ValueConverters.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Converters\\ValueConverters.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\Converters\\ValueConverters.cs",
               "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Converters\\ValueConverters.cs",
               "RelativeToolTip": "elevator_simulation\\Converters\\ValueConverters.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAIUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAxwIUAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-11T21:02:31.788Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-11T21:02:31.788Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 8,
               "Title": "RelayCommand.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Commands\\RelayCommand.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\Commands\\RelayCommand.cs",
@@ -164,12 +159,11 @@
               "RelativeToolTip": "elevator_simulation\\Commands\\RelayCommand.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T17:22:09.822Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T17:22:09.822Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
               "Title": "ElevatorModel.cs",
               "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\Models\\ElevatorModel.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\Models\\ElevatorModel.cs",
@@ -177,8 +171,7 @@
               "RelativeToolTip": "elevator_simulation\\Models\\ElevatorModel.cs",
               "ViewState": "AgIAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T17:22:09.829Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T17:22:09.829Z"
             }
           ]
         }
