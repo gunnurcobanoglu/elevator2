@@ -25,7 +25,6 @@ namespace elevator_simulation.ViewModels
         private double _doorOpenAmount;
         private bool _isProcessingRequests;
         private ObservableCollection<int> _passengerIcons;
-        private bool _isEmergencyMode;
 
         // Yolcu istekleri ve hedefler
         private readonly List<PassengerRequest> _pendingRequests = new();
@@ -40,14 +39,6 @@ namespace elevator_simulation.ViewModels
         }
         public ICommand CallElevatorCommand { get; }
         public ICommand SelectDestinationCommand { get; }
-        public ICommand EmergencyStopCommand { get; }
-        public ICommand ResetEmergencyCommand { get; }
-
-        public bool IsEmergencyMode
-        {
-            get => _isEmergencyMode;
-            set => SetProperty(ref _isEmergencyMode, value);
-        }
 
         public int CurrentFloor
         {
@@ -124,8 +115,6 @@ namespace elevator_simulation.ViewModels
 
             CallElevatorCommand = new RelayCommand(OnCallElevator, CanCallElevator);
             SelectDestinationCommand = new RelayCommand(OnSelectDestination, CanSelectDestination);
-            EmergencyStopCommand = new RelayCommand(OnEmergencyStop, CanEmergencyStop);
-            ResetEmergencyCommand = new RelayCommand(OnResetEmergency, CanResetEmergency);
 
             _timer = new DispatcherTimer
             {
@@ -196,7 +185,13 @@ namespace elevator_simulation.ViewModels
                     _elevator.State.ToString()
                 );
 
-                if (!_isProcessingRequests)
+                // ÖZEL DURUM: Asansör zaten çaðrý yapýlan kattaysa
+                if (callingFloor == _currentFloor && _elevator.State == Models.ElevatorState.Idle)
+                {
+                    // Direkt yolcu alma iþlemini baþlat
+                    await HandleSameFloorPickup(request);
+                }
+                else if (!_isProcessingRequests)
                 {
                     await ProcessRequests();
                 }
@@ -230,6 +225,71 @@ namespace elevator_simulation.ViewModels
             }
         }
 
+        private async Task HandleSameFloorPickup(PassengerRequest request)
+        {
+            // Kapasite kontrolü
+            if (_passengerCount >= MaxCapacity)
+            {
+                AddStatusMessage($"Kat {_currentFloor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
+                request.Status = RequestStatus.Completed;
+                return;
+            }
+
+            // Kapýyý aç
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kapý Açýlýyor";
+            await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
+
+            // Yolcu binme iþlemi
+            _elevator.State = Models.ElevatorState.WaitingForPassenger;
+            ElevatorStateDisplay = "Yolcu Biniyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+            request.Status = RequestStatus.PickedUp;
+            PassengerCount++;
+
+            // Bekleme süresi (ayný kattaysa çok kýsa)
+            var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
+            request.WaitTimeSeconds = waitTimeSeconds;
+
+            // ML verisi kaydet
+            _mlDataCollector.RecordRequest(
+                request.SimulationTime,
+                request.PickupFloor,
+                request.ElevatorFloorAtRequest,
+                waitTimeSeconds,
+                _passengerCount - 1,
+                "PickedUp"
+            );
+
+            AddStatusMessage($"Kat {_currentFloor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
+
+            // Ýç paneli aç ve hedef seçilene kadar bekle
+            IsInnerPanelOpen = true;
+
+            int waitCount = 0;
+            while (request.DestinationFloor == -1 && waitCount < 300)
+            {
+                await Task.Delay(100);
+                waitCount++;
+            }
+
+            IsInnerPanelOpen = false;
+
+            // Kapýyý kapat
+            ElevatorStateDisplay = "Kapý Kapanýyor";
+            await Task.Delay(TimeSpan.FromSeconds(1.0));
+
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+
+            // Hedef seçildiyse iþleme devam et
+            if (request.DestinationFloor != -1 && !_isProcessingRequests)
+            {
+                await ProcessRequests();
+            }
+        }
+
         private async Task ProcessRequests()
         {
             _isProcessingRequests = true;
@@ -237,13 +297,6 @@ namespace elevator_simulation.ViewModels
             while (_pendingRequests.Any(r => r.Status != RequestStatus.Completed) || 
                    _destinationFloors.Count > 0)
             {
-                // ?? ACÝL DURUM KONTROLÜ
-                if (_isEmergencyMode)
-                {
-                    await Task.Delay(500);
-                    continue; // Acil durumdaysa hareket etme
-                }
-
                 // Her adýmda yönü ve hedefi yeniden hesapla
                 var direction = DetermineDirection();
 
@@ -500,37 +553,6 @@ namespace elevator_simulation.ViewModels
                 var elapsed = DateTime.Now - _simulationStartTime;
                 TotalTime = elapsed.ToString(@"hh\:mm\:ss");
             }
-        }
-
-        // ?? ACÝL DURUM METOD
-        private bool CanEmergencyStop(object? parameter)
-        {
-            return !_isEmergencyMode; // Zaten acil durumdaysa basýlamaz
-        }
-
-        private void OnEmergencyStop(object? parameter)
-        {
-            IsEmergencyMode = true;
-            _elevator.State = Models.ElevatorState.Idle;
-            ElevatorStateDisplay = "?? ACÝL DURUM!";
-            AddStatusMessage($"[ACÝL DURUM] Asansör kat {_currentFloor}'da durduruldu!");
-            
-            // Ýstekleri temizleme (opsiyonel)
-            // _pendingRequests.Clear();
-            // _destinationFloors.Clear();
-        }
-
-        private bool CanResetEmergency(object? parameter)
-        {
-            return _isEmergencyMode; // Sadece acil durumdayken resetlenebilir
-        }
-
-        private void OnResetEmergency(object? parameter)
-        {
-            IsEmergencyMode = false;
-            _elevator.State = Models.ElevatorState.Idle;
-            ElevatorStateDisplay = "Beklemede";
-            AddStatusMessage($"[SÝSTEM] Acil durum sýfýrlandý. Asansör kat {_currentFloor}'da hazýr.");
         }
     }
 }
