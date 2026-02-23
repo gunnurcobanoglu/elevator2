@@ -25,16 +25,22 @@ namespace elevator_simulation
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Kat çizgilerini oluþtur
+            // Kat çizgilerini oluþtur (Her iki asansör için)
             var canvas = FindName("MainCanvas") as Canvas;
             if (canvas != null)
             {
                 CizgileriOlustur(canvas);
             }
-            
+
+            var canvas2 = FindName("MainCanvas2") as Canvas;
+            if (canvas2 != null)
+            {
+                CizgileriOlustur(canvas2);
+            }
+
             // ML veri sayacýný güncelle
             UpdateDataCountDisplay();
-            
+
             // Saat deðiþikliklerini dinle
             if (txtHour != null)
             {
@@ -44,7 +50,7 @@ namespace elevator_simulation
             {
                 txtMinute.TextChanged += OnTimeChanged;
             }
-            
+
             // Baþlangýç saatini ayarla
             UpdateSimulationTime();
         }
