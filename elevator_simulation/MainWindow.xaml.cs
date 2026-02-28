@@ -25,7 +25,7 @@ namespace elevator_simulation
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Kat çizgilerini oluþtur (Her iki asansör için)
+            // Kat çizgilerini oluþtur (Dört asansör için)
             var canvas = FindName("MainCanvas") as Canvas;
             if (canvas != null)
             {
@@ -36,6 +36,18 @@ namespace elevator_simulation
             if (canvas2 != null)
             {
                 CizgileriOlustur(canvas2);
+            }
+
+            var canvas3 = FindName("MainCanvas3") as Canvas;
+            if (canvas3 != null)
+            {
+                CizgileriOlustur(canvas3);
+            }
+
+            var canvas4 = FindName("MainCanvas4") as Canvas;
+            if (canvas4 != null)
+            {
+                CizgileriOlustur(canvas4);
             }
 
             // ML veri sayacýný güncelle
