@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.ComponentModel;
 
 namespace elevator_simulation
 {
@@ -14,6 +15,10 @@ namespace elevator_simulation
         private const int KatYuksekligi = 55;
         private const int ToplamKatSayisi = 19; // 0'dan 19'a kadar (20 kat)
 
+        // ScrollViewer referanslarý - Sadece 2 asansör
+        private ScrollViewer? _scrollViewer1;
+        private ScrollViewer? _scrollViewer2;
+
         /// <summary>
         /// Yapýcý (Constructor): Uygulama baþladýðýnda çalýþýr
         /// </summary>
@@ -25,7 +30,7 @@ namespace elevator_simulation
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Kat çizgilerini oluþtur (Dört asansör için)
+            // Kat çizgilerini oluþtur (Ýki asansör için)
             var canvas = FindName("MainCanvas") as Canvas;
             if (canvas != null)
             {
@@ -38,16 +43,14 @@ namespace elevator_simulation
                 CizgileriOlustur(canvas2);
             }
 
-            var canvas3 = FindName("MainCanvas3") as Canvas;
-            if (canvas3 != null)
-            {
-                CizgileriOlustur(canvas3);
-            }
+            // ScrollViewer referanslarýný al
+            _scrollViewer1 = FindName("ScrollViewer1") as ScrollViewer;
+            _scrollViewer2 = FindName("ScrollViewer2") as ScrollViewer;
 
-            var canvas4 = FindName("MainCanvas4") as Canvas;
-            if (canvas4 != null)
+            // ViewModel property deðiþikliklerini dinle
+            if (DataContext is ViewModels.MainViewModel viewModel)
             {
-                CizgileriOlustur(canvas4);
+                viewModel.PropertyChanged += ViewModel_PropertyChanged;
             }
 
             // ML veri sayacýný güncelle
@@ -65,6 +68,46 @@ namespace elevator_simulation
 
             // Baþlangýç saatini ayarla
             UpdateSimulationTime();
+        }
+
+        private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            // Asansör katý deðiþtiðinde scroll yap
+            if (e.PropertyName == "CurrentFloor")
+            {
+                var viewModel = sender as ViewModels.MainViewModel;
+                if (viewModel != null)
+                {
+                    ScrollToFloor(_scrollViewer1, viewModel.CurrentFloor);
+                }
+            }
+            else if (e.PropertyName == "CurrentFloor2")
+            {
+                var viewModel = sender as ViewModels.MainViewModel;
+                if (viewModel != null)
+                {
+                    ScrollToFloor(_scrollViewer2, viewModel.CurrentFloor2);
+                }
+            }
+        }
+
+        private void ScrollToFloor(ScrollViewer? scrollViewer, int floor)
+        {
+            if (scrollViewer == null) return;
+
+            // Her katýn yüksekliði 55 piksel
+            // Asansör yukarý hareket ettikçe, scroll aþaðý kaydýrýlmalý
+            // Floor 0 = en altta, Floor 19 = en üstte
+
+            // ScrollViewer'ýn görünür alanýnýn ortasýna getir
+            double totalHeight = ToplamKatSayisi * KatYuksekligi;
+            double targetPosition = totalHeight - (floor * KatYuksekligi) - (scrollViewer.ViewportHeight / 2);
+
+            // Sýnýrlarý kontrol et
+            targetPosition = Math.Max(0, Math.Min(targetPosition, scrollViewer.ScrollableHeight));
+
+            // Yumuþak scroll animasyonu
+            scrollViewer.ScrollToVerticalOffset(targetPosition);
         }
 
         private void OnTimeChanged(object sender, TextChangedEventArgs e)
@@ -108,6 +151,20 @@ namespace elevator_simulation
             catch
             {
                 // Hata durumunda sessizce geç
+            }
+        }
+
+        /// <summary>
+        /// Acil Durum butonu týklandýðýnda çalýþýr
+        /// </summary>
+        private void BtnEmergency_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataContext is ViewModels.MainViewModel viewModel)
+            {
+                if (viewModel.EmergencyStopCommand?.CanExecute(null) == true)
+                {
+                    viewModel.EmergencyStopCommand.Execute(null);
+                }
             }
         }
 

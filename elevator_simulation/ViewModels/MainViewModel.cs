@@ -9,16 +9,22 @@ namespace elevator_simulation.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        // ==================== FIELDS ====================
+        
+        // AsansÃ¶r Modelleri
         private readonly ElevatorModel _elevator;
-        private readonly ElevatorModel _elevator2; // Ýkinci asansör
-        private readonly ElevatorModel _elevator3; // Üçüncü asansör
-        private readonly ElevatorModel _elevator4; // Dördüncü asansör
+        private readonly ElevatorModel _elevator2;
+        
+        // Timer ve Servisler
         private readonly DispatcherTimer _timer;
         private readonly MLDataCollector _mlDataCollector;
+        
+        // Simulasyon DeÄŸiÅŸkenleri
         private DateTime _simulationStartTime;
         private bool _isSimulationRunning;
         private TimeSpan _currentSimulationTime;
-
+        
+        // AsansÃ¶r 1 DeÄŸiÅŸkenleri
         private int _currentFloor;
         private string _elevatorState;
         private string _statusMessage;
@@ -28,8 +34,8 @@ namespace elevator_simulation.ViewModels
         private double _doorOpenAmount;
         private bool _isProcessingRequests;
         private ObservableCollection<int> _passengerIcons;
-
-        // Ýkinci asansör için deðiþkenler
+        
+        // AsansÃ¶r 2 DeÄŸiÅŸkenleri
         private int _currentFloor2;
         private string _elevatorState2;
         private int _passengerCount2;
@@ -37,123 +43,87 @@ namespace elevator_simulation.ViewModels
         private double _doorOpenAmount2;
         private bool _isProcessingRequests2;
         private ObservableCollection<int> _passengerIcons2;
-
-        // Üçüncü asansör için deðiþkenler
-        private int _currentFloor3;
-        private string _elevatorState3;
-        private int _passengerCount3;
-        private bool _isInnerPanelOpen3;
-        private double _doorOpenAmount3;
-        private bool _isProcessingRequests3;
-        private ObservableCollection<int> _passengerIcons3;
-
-        // Dördüncü asansör için deðiþkenler
-        private int _currentFloor4;
-        private string _elevatorState4;
-        private int _passengerCount4;
-        private bool _isInnerPanelOpen4;
-        private double _doorOpenAmount4;
-        private bool _isProcessingRequests4;
-        private ObservableCollection<int> _passengerIcons4;
-
-        // Yolcu istekleri ve hedefler
+        
+        // Yolcu Ä°stekleri
         private readonly List<PassengerRequest> _pendingRequests = new();
-        private readonly List<PassengerRequest> _pendingRequests2 = new(); // Ýkinci asansör için
-        private readonly List<PassengerRequest> _pendingRequests3 = new(); // Üçüncü asansör için
-        private readonly List<PassengerRequest> _pendingRequests4 = new(); // Dördüncü asansör için
+        private readonly List<PassengerRequest> _pendingRequests2 = new();
         private readonly HashSet<int> _destinationFloors = new();
-        private readonly HashSet<int> _destinationFloors2 = new(); // Ýkinci asansör için
-        private readonly HashSet<int> _destinationFloors3 = new(); // Üçüncü asansör için
-        private readonly HashSet<int> _destinationFloors4 = new(); // Dördüncü asansör için
+        private readonly HashSet<int> _destinationFloors2 = new();
         private const int MaxCapacity = 10;
 
+        // Kat bazlÄ± Ã§aÄŸrÄ± sayacÄ± (her kattan kaÃ§ kiÅŸi Ã§aÄŸrÄ± yaptÄ±)
+        private readonly Dictionary<int, int> _floorCallCounts = new();
+
+        // Enerji Tasarrufu Modu
+        private const int ParkingFloor = 0; // Zemin kat
+        private readonly TimeSpan _idleTimeBeforeParking = TimeSpan.FromSeconds(30);
+        private DateTime? _elevator1IdleStartTime;
+        private DateTime? _elevator2IdleStartTime;
+
+        // Maksimum Bekleme SÃ¼resi Garantisi
+        private const int MaxWaitTimeSeconds = 60;
+
+        // Doluluk ve Performans Ä°zleme
+        private int _elevator1TotalDistance;
+        private int _elevator2TotalDistance;
+        
+        // ==================== PROPERTIES ====================
+        
         public ObservableCollection<int> Floors { get; }
+        
         public ObservableCollection<int> PassengerIcons
         {
             get => _passengerIcons;
             set => SetProperty(ref _passengerIcons, value);
         }
+        
         public ObservableCollection<int> PassengerIcons2
         {
             get => _passengerIcons2;
             set => SetProperty(ref _passengerIcons2, value);
         }
-        public ObservableCollection<int> PassengerIcons3
-        {
-            get => _passengerIcons3;
-            set => SetProperty(ref _passengerIcons3, value);
-        }
-        public ObservableCollection<int> PassengerIcons4
-        {
-            get => _passengerIcons4;
-            set => SetProperty(ref _passengerIcons4, value);
-        }
+        
         public ICommand CallElevatorCommand { get; }
         public ICommand SelectDestinationCommand { get; }
-        public ICommand SelectDestinationCommand2 { get; } // Ýkinci asansör için
-        public ICommand SelectDestinationCommand3 { get; } // Üçüncü asansör için
-        public ICommand SelectDestinationCommand4 { get; } // Dördüncü asansör için
-
+        public ICommand SelectDestinationCommand2 { get; }
+        public ICommand EmergencyStopCommand { get; }
+        
         public int CurrentFloor
         {
             get => _currentFloor;
             set => SetProperty(ref _currentFloor, value);
         }
-
+        
         public int CurrentFloor2
         {
             get => _currentFloor2;
             set => SetProperty(ref _currentFloor2, value);
         }
-
-        public int CurrentFloor3
-        {
-            get => _currentFloor3;
-            set => SetProperty(ref _currentFloor3, value);
-        }
-
-        public int CurrentFloor4
-        {
-            get => _currentFloor4;
-            set => SetProperty(ref _currentFloor4, value);
-        }
-
+        
         public string ElevatorStateDisplay
         {
             get => _elevatorState;
             set => SetProperty(ref _elevatorState, value);
         }
-
+        
         public string ElevatorStateDisplay2
         {
             get => _elevatorState2;
             set => SetProperty(ref _elevatorState2, value);
         }
-
-        public string ElevatorStateDisplay3
-        {
-            get => _elevatorState3;
-            set => SetProperty(ref _elevatorState3, value);
-        }
-
-        public string ElevatorStateDisplay4
-        {
-            get => _elevatorState4;
-            set => SetProperty(ref _elevatorState4, value);
-        }
-
+        
         public string StatusMessage
         {
             get => _statusMessage;
             set => SetProperty(ref _statusMessage, value);
         }
-
+        
         public string TotalTime
         {
             get => _totalTime;
             set => SetProperty(ref _totalTime, value);
         }
-
+        
         public int PassengerCount
         {
             get => _passengerCount;
@@ -161,8 +131,9 @@ namespace elevator_simulation.ViewModels
             {
                 SetProperty(ref _passengerCount, value);
                 OnPropertyChanged(nameof(HasPassenger));
+                OnPropertyChanged(nameof(Elevator1LoadPercentage));
+                OnPropertyChanged(nameof(Elevator1LoadStatus));
 
-                // Ýkon listesini güncelle
                 PassengerIcons.Clear();
                 for (int i = 0; i < value; i++)
                 {
@@ -178,8 +149,9 @@ namespace elevator_simulation.ViewModels
             {
                 SetProperty(ref _passengerCount2, value);
                 OnPropertyChanged(nameof(HasPassenger2));
+                OnPropertyChanged(nameof(Elevator2LoadPercentage));
+                OnPropertyChanged(nameof(Elevator2LoadStatus));
 
-                // Ýkon listesini güncelle
                 PassengerIcons2.Clear();
                 for (int i = 0; i < value; i++)
                 {
@@ -187,74 +159,60 @@ namespace elevator_simulation.ViewModels
                 }
             }
         }
-
-        public int PassengerCount3
-        {
-            get => _passengerCount3;
-            set
-            {
-                SetProperty(ref _passengerCount3, value);
-                OnPropertyChanged(nameof(HasPassenger3));
-
-                // Ýkon listesini güncelle
-                PassengerIcons3.Clear();
-                for (int i = 0; i < value; i++)
-                {
-                    PassengerIcons3.Add(i);
-                }
-            }
-        }
-
-        public int PassengerCount4
-        {
-            get => _passengerCount4;
-            set
-            {
-                SetProperty(ref _passengerCount4, value);
-                OnPropertyChanged(nameof(HasPassenger4));
-
-                // Ýkon listesini güncelle
-                PassengerIcons4.Clear();
-                for (int i = 0; i < value; i++)
-                {
-                    PassengerIcons4.Add(i);
-                }
-            }
-        }
-
+        
         public bool HasPassenger => _passengerCount > 0;
         public bool HasPassenger2 => _passengerCount2 > 0;
-        public bool HasPassenger3 => _passengerCount3 > 0;
-        public bool HasPassenger4 => _passengerCount4 > 0;
-
+        
         public TimeSpan CurrentSimulationTime
         {
             get => _currentSimulationTime;
             set => SetProperty(ref _currentSimulationTime, value);
         }
-
+        
         public bool IsInnerPanelOpen
         {
             get => _isInnerPanelOpen;
-            set => SetProperty(ref _isInnerPanelOpen, value);
+            set
+            {
+                // Z-Index'i SetProperty'den Ã–NCE ayarla
+                if (value)
+                {
+                    // AsansÃ¶r 1'in popup'Ä±nÄ± Ã¶ne getir
+                    Elevator1PanelZIndex = 1001;
+                    Elevator2PanelZIndex = 1000;
+                }
+                else
+                {
+                    // Panel kapandÄ±ÄŸÄ±nda Z-Index'i reset et
+                    Elevator1PanelZIndex = 1000;
+                }
+
+                // Sonra property'yi set et
+                SetProperty(ref _isInnerPanelOpen, value);
+            }
         }
 
         public bool IsInnerPanelOpen2
         {
             get => _isInnerPanelOpen2;
-            set => SetProperty(ref _isInnerPanelOpen2, value);
-        }
+            set
+            {
+                // Z-Index'i SetProperty'den Ã–NCE ayarla
+                if (value)
+                {
+                    // AsansÃ¶r 2'nin popup'Ä±nÄ± Ã¶ne getir
+                    Elevator2PanelZIndex = 1001;
+                    Elevator1PanelZIndex = 1000;
+                }
+                else
+                {
+                    // Panel kapandÄ±ÄŸÄ±nda Z-Index'i reset et
+                    Elevator2PanelZIndex = 1000;
+                }
 
-        public bool IsInnerPanelOpen3
-        {
-            get => _isInnerPanelOpen3;
-            set => SetProperty(ref _isInnerPanelOpen3, value);
-        }
-
-        public bool IsInnerPanelOpen4
-        {
-            get => _isInnerPanelOpen4;
-            set => SetProperty(ref _isInnerPanelOpen4, value);
+                // Sonra property'yi set et
+                SetProperty(ref _isInnerPanelOpen2, value);
+            }
         }
 
         public double DoorOpenAmount
@@ -269,99 +227,268 @@ namespace elevator_simulation.ViewModels
             set => SetProperty(ref _doorOpenAmount2, value);
         }
 
-        public double DoorOpenAmount3
+        // Doluluk GÃ¶stergeleri
+        public string Elevator1LoadPercentage => $"{(_passengerCount * 100 / MaxCapacity)}%";
+        public string Elevator2LoadPercentage => $"{(_passengerCount2 * 100 / MaxCapacity)}%";
+
+        public string Elevator1LoadStatus => _passengerCount switch
         {
-            get => _doorOpenAmount3;
-            set => SetProperty(ref _doorOpenAmount3, value);
+            0 => "ðŸŸ¢ BoÅŸ",
+            <= 3 => "ðŸŸ¡ Az Yolcu",
+            <= 7 => "ðŸŸ  Normal",
+            <= 9 => "ðŸŸ  KalabalÄ±k",
+            _ => "ðŸ”´ Dolu"
+        };
+
+        public string Elevator2LoadStatus => _passengerCount2 switch
+        {
+            0 => "ðŸŸ¢ BoÅŸ",
+            <= 3 => "ðŸŸ¡ Az Yolcu",
+            <= 7 => "ðŸŸ  Normal",
+            <= 9 => "ðŸŸ  KalabalÄ±k",
+            _ => "ðŸ”´ Dolu"
+        };
+
+        // Ä°Ã§ Panel Progress Bilgileri
+        private int _elevator1WaitingPassengers;
+        private int _elevator2WaitingPassengers;
+
+        public int Elevator1WaitingPassengers
+        {
+            get => _elevator1WaitingPassengers;
+            set
+            {
+                SetProperty(ref _elevator1WaitingPassengers, value);
+                OnPropertyChanged(nameof(Elevator1PanelTitle));
+            }
         }
 
-        public double DoorOpenAmount4
+        public int Elevator2WaitingPassengers
         {
-            get => _doorOpenAmount4;
-            set => SetProperty(ref _doorOpenAmount4, value);
+            get => _elevator2WaitingPassengers;
+            set
+            {
+                SetProperty(ref _elevator2WaitingPassengers, value);
+                OnPropertyChanged(nameof(Elevator2PanelTitle));
+            }
         }
 
+        public string Elevator1PanelTitle => _elevator1WaitingPassengers > 0 
+            ? $"ðŸ”µ ASANSÃ–R 1 - {_elevator1WaitingPassengers} Yolcu Hedef SeÃ§iyor"
+            : "ðŸ”µ ASANSÃ–R 1 - Ä°Ã‡ PANEL";
+
+        public string Elevator2PanelTitle => _elevator2WaitingPassengers > 0 
+            ? $"ðŸŸ¢ ASANSÃ–R 2 - {_elevator2WaitingPassengers} Yolcu Hedef SeÃ§iyor"
+            : "ðŸŸ¢ ASANSÃ–R 2 - Ä°Ã‡ PANEL";
+
+        // Popup Z-Index (Hangi popup Ã¶ndeyse onu gÃ¶stermek iÃ§in)
+        private int _elevator1PanelZIndex = 1000;
+        private int _elevator2PanelZIndex = 1000;
+
+        public int Elevator1PanelZIndex
+        {
+            get => _elevator1PanelZIndex;
+            set
+            {
+                if (SetProperty(ref _elevator1PanelZIndex, value))
+                {
+                    // UI'yÄ± zorla gÃ¼ncelle
+                    OnPropertyChanged(nameof(Elevator1PanelZIndex));
+                    OnPropertyChanged(nameof(IsElevator1PanelInteractive));
+                    OnPropertyChanged(nameof(IsElevator2PanelInteractive));
+                }
+            }
+        }
+
+        public int Elevator2PanelZIndex
+        {
+            get => _elevator2PanelZIndex;
+            set
+            {
+                if (SetProperty(ref _elevator2PanelZIndex, value))
+                {
+                    // UI'yÄ± zorla gÃ¼ncelle
+                    OnPropertyChanged(nameof(Elevator2PanelZIndex));
+                    OnPropertyChanged(nameof(IsElevator1PanelInteractive));
+                    OnPropertyChanged(nameof(IsElevator2PanelInteractive));
+                }
+            }
+        }
+
+        // Popup'larÄ±n tÄ±klanabilirliÄŸi iÃ§in property'ler
+        // EÅŸit durumunda Elevator1 Ã¶ncelikli olur (>=), bÃ¶ylece sadece biri aktif olur
+        public bool IsElevator1PanelInteractive => _elevator1PanelZIndex >= _elevator2PanelZIndex;
+        // Elevator2 sadece Z-Index'i kesinlikle daha yÃ¼ksekse (>) aktif olur
+        public bool IsElevator2PanelInteractive => _elevator2PanelZIndex > _elevator1PanelZIndex;
+
+        // ==================== CONSTRUCTOR ====================
+        
         public MainViewModel()
         {
             _elevator = new ElevatorModel();
-            _elevator2 = new ElevatorModel(); // Ýkinci asansör
-            _elevator3 = new ElevatorModel(); // Üçüncü asansör
-            _elevator4 = new ElevatorModel(); // Dördüncü asansör
+            _elevator2 = new ElevatorModel();
             _mlDataCollector = new MLDataCollector();
             Floors = new ObservableCollection<int>();
             _passengerIcons = new ObservableCollection<int>();
             _passengerIcons2 = new ObservableCollection<int>();
-            _passengerIcons3 = new ObservableCollection<int>();
-            _passengerIcons4 = new ObservableCollection<int>();
-
+            
             for (int i = 0; i < ElevatorModel.TotalFloors; i++)
             {
                 Floors.Add(i);
             }
-
+            
             CallElevatorCommand = new RelayCommand(OnCallElevator, CanCallElevator);
             SelectDestinationCommand = new RelayCommand(OnSelectDestination, CanSelectDestination);
             SelectDestinationCommand2 = new RelayCommand(OnSelectDestination2, CanSelectDestination2);
-            SelectDestinationCommand3 = new RelayCommand(OnSelectDestination3, CanSelectDestination3);
-            SelectDestinationCommand4 = new RelayCommand(OnSelectDestination4, CanSelectDestination4);
-
+            EmergencyStopCommand = new RelayCommand(async (param) => await ExecuteEmergencyStop(), (param) => true);
+            
             _timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(100)
             };
             _timer.Tick += Timer_Tick;
-
+            
             _currentFloor = 0;
-            _currentFloor2 = 0; // Ýkinci asansör baþlangýç katý
-            _currentFloor3 = 0; // Üçüncü asansör baþlangýç katý
-            _currentFloor4 = 0; // Dördüncü asansör baþlangýç katý
+            _currentFloor2 = 0;
             _elevatorState = "Beklemede";
-            _elevatorState2 = "Beklemede"; // Ýkinci asansör durumu
-            _elevatorState3 = "Beklemede"; // Üçüncü asansör durumu
-            _elevatorState4 = "Beklemede"; // Dördüncü asansör durumu
-            _statusMessage = "[Sistem] Asansörler hazýr.";
+            _elevatorState2 = "Beklemede";
+            _statusMessage = "[Sistem] AsansÃ¶rler hazÄ±r.";
             _totalTime = "00:00:00";
             _passengerCount = 0;
-            _passengerCount2 = 0; // Ýkinci asansör yolcu sayýsý
-            _passengerCount3 = 0; // Üçüncü asansör yolcu sayýsý
-            _passengerCount4 = 0; // Dördüncü asansör yolcu sayýsý
+            _passengerCount2 = 0;
             _isSimulationRunning = false;
             _isInnerPanelOpen = false;
-            _isInnerPanelOpen2 = false; // Ýkinci asansör paneli
-            _isInnerPanelOpen3 = false; // Üçüncü asansör paneli
-            _isInnerPanelOpen4 = false; // Dördüncü asansör paneli
+            _isInnerPanelOpen2 = false;
             _doorOpenAmount = 0.0;
-            _doorOpenAmount2 = 0.0; // Ýkinci asansör kapýsý
-            _doorOpenAmount3 = 0.0; // Üçüncü asansör kapýsý
-            _doorOpenAmount4 = 0.0; // Dördüncü asansör kapýsý
+            _doorOpenAmount2 = 0.0;
             _isProcessingRequests = false;
-            _isProcessingRequests2 = false; // Ýkinci asansör iþlem durumu
-            _isProcessingRequests3 = false; // Üçüncü asansör iþlem durumu
-            _isProcessingRequests4 = false; // Dördüncü asansör iþlem durumu
+            _isProcessingRequests2 = false;
         }
+        
+        // ==================== HELPER METHODS ====================
 
         private void AddStatusMessage(string message)
         {
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
             var newMessage = $"[{timestamp}] {message}";
-            
+
             if (string.IsNullOrEmpty(_statusMessage))
             {
                 StatusMessage = newMessage;
             }
             else
             {
-                // Yeni mesajý EN ÜSTE ekle
                 StatusMessage = newMessage + "\n" + _statusMessage;
             }
         }
 
-        private bool CanCallElevator(object? parameter)
+        /// <summary>
+        /// AsansÃ¶rÃ¼n bir Ã§aÄŸrÄ±ya ne kadar uygun olduÄŸunu hesaplar (yÃ¶n bazlÄ± optimizasyon)
+        /// </summary>
+        private int CalculateElevatorScore(int callingFloor, int elevatorFloor, Models.ElevatorState elevatorState, int distance, bool isBusy)
         {
-            // Sol panelden her zaman çaðrýlabilir
-            return parameter is int;
+            int score = 100; // BaÅŸlangÄ±Ã§ skoru
+
+            // MeÅŸgul asansÃ¶re ceza
+            if (isBusy)
+            {
+                score -= 80;
+            }
+
+            // Mesafe cezasÄ± (her kat iÃ§in -3 puan)
+            score -= distance * 3;
+
+            // YÃ¶n bonusu: AsansÃ¶r aynÄ± yÃ¶nde mi?
+            int elevatorToCall = callingFloor - elevatorFloor;
+
+            if (elevatorState == Models.ElevatorState.MovingUp && elevatorToCall > 0)
+            {
+                // AsansÃ¶r yukarÄ± gidiyor ve Ã§aÄŸrÄ± da yukarÄ±da
+                score += 40;
+                AddStatusMessage($"[Optimizasyon] YukarÄ± giden asansÃ¶re +40 bonus (AynÄ± yÃ¶n)");
+            }
+            else if (elevatorState == Models.ElevatorState.MovingDown && elevatorToCall < 0)
+            {
+                // AsansÃ¶r aÅŸaÄŸÄ± gidiyor ve Ã§aÄŸrÄ± da aÅŸaÄŸÄ±da
+                score += 40;
+                AddStatusMessage($"[Optimizasyon] AÅŸaÄŸÄ± giden asansÃ¶re +40 bonus (AynÄ± yÃ¶n)");
+            }
+            else if (elevatorState == Models.ElevatorState.Idle)
+            {
+                // BoÅŸta olan asansÃ¶re bonus
+                score += 30;
+            }
+            else
+            {
+                // Ters yÃ¶nde giden asansÃ¶re ceza
+                score -= 20;
+                AddStatusMessage($"[Optimizasyon] Ters yÃ¶nde giden asansÃ¶re -20 ceza");
+            }
+
+            return score;
         }
 
+        /// <summary>
+        /// Yolcu sayÄ±sÄ±na gÃ¶re kat geÃ§iÅŸ sÃ¼resini hesaplar (aÄŸÄ±rlÄ±k sensÃ¶rÃ¼)
+        /// </summary>
+        private double CalculateFloorTravelTime(int passengerCount)
+        {
+            double baseTime = ElevatorModel.FloorTravelTime;
+            double loadFactor = (double)passengerCount / MaxCapacity;
+
+            // %100 dolulukta %20 daha yavaÅŸ (aÄŸÄ±rlÄ±k etkisi)
+            double adjustedTime = baseTime * (1 + loadFactor * 0.2);
+
+            return adjustedTime;
+        }
+
+        /// <summary>
+        /// Uzun sÃ¼re bekleyen yolcularÄ± kontrol eder ve Ã¶ncelik verir
+        /// </summary>
+        private void CheckLongWaitingPassengers()
+        {
+            // AsansÃ¶r 1 iÃ§in kontrol
+            var longWaiting1 = _pendingRequests
+                .Where(r => r.Status == RequestStatus.Pending)
+                .Where(r => (DateTime.Now - r.RequestTime).TotalSeconds > MaxWaitTimeSeconds)
+                .OrderBy(r => r.RequestTime)
+                .ToList();
+
+            foreach (var urgent in longWaiting1)
+            {
+                var waitTime = (int)(DateTime.Now - urgent.RequestTime).TotalSeconds;
+                AddStatusMessage($"âš ï¸ ACÄ°L [AsansÃ¶r 1]: Kat {urgent.PickupFloor} - {waitTime}s bekledi! Ã–ncelik veriliyor");
+
+                // Ä°steÄŸi listenin baÅŸÄ±na al (Ã¶ncelik)
+                _pendingRequests.Remove(urgent);
+                _pendingRequests.Insert(0, urgent);
+            }
+
+            // AsansÃ¶r 2 iÃ§in kontrol
+            var longWaiting2 = _pendingRequests2
+                .Where(r => r.Status == RequestStatus.Pending)
+                .Where(r => (DateTime.Now - r.RequestTime).TotalSeconds > MaxWaitTimeSeconds)
+                .OrderBy(r => r.RequestTime)
+                .ToList();
+
+            foreach (var urgent in longWaiting2)
+            {
+                var waitTime = (int)(DateTime.Now - urgent.RequestTime).TotalSeconds;
+                AddStatusMessage($"âš ï¸ ACÄ°L [AsansÃ¶r 2]: Kat {urgent.PickupFloor} - {waitTime}s bekledi! Ã–ncelik veriliyor");
+
+                // Ä°steÄŸi listenin baÅŸÄ±na al (Ã¶ncelik)
+                _pendingRequests2.Remove(urgent);
+                _pendingRequests2.Insert(0, urgent);
+            }
+        }
+        
+        // ==================== COMMAND HANDLERS ====================
+        
+        private bool CanCallElevator(object? parameter)
+        {
+            return parameter is int;
+        }
+        
         private async void OnCallElevator(object? parameter)
         {
             if (parameter is int callingFloor)
@@ -373,40 +500,110 @@ namespace elevator_simulation.ViewModels
                     _isSimulationRunning = true;
                 }
 
-                // 4 asansör için mesafe hesapla
+                // Bu kattan kaÃ§ kiÅŸi Ã§aÄŸrÄ± yaptÄ±ÄŸÄ±nÄ± takip et
+                if (!_floorCallCounts.ContainsKey(callingFloor))
+                {
+                    _floorCallCounts[callingFloor] = 0;
+                }
+                _floorCallCounts[callingFloor]++;
+
+                int callCountOnFloor = _floorCallCounts[callingFloor];
+
+                // AynÄ± kata zaten bir asansÃ¶r gÃ¶nderilmiÅŸ mi kontrol et
+                bool elevator1AlreadyAssigned = _pendingRequests.Any(r => 
+                    r.PickupFloor == callingFloor && r.Status == RequestStatus.Pending);
+                bool elevator2AlreadyAssigned = _pendingRequests2.Any(r => 
+                    r.PickupFloor == callingFloor && r.Status == RequestStatus.Pending);
+
+                // ===== GERÃ‡EKÃ‡Ä° MANTIK =====
+
+                // 1. EÄŸer bir asansÃ¶r zaten bu kata gidiyorsa, ona request ekle
+                if (elevator1AlreadyAssigned && !elevator2AlreadyAssigned)
+                {
+                    // AsansÃ¶r 1 zaten gidiyor
+
+                    // 10'dan fazla kiÅŸi varsa ikinci asansÃ¶rÃ¼ de gÃ¶nder
+                    if (callCountOnFloor > MaxCapacity)
+                    {
+                        AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Kapasite aÅŸÄ±ldÄ±! AsansÃ¶r 2 de gÃ¶nderiliyor (Toplam: {callCountOnFloor} kiÅŸi)");
+                        await HandleElevatorCall(callingFloor, 2, _currentFloor2, _pendingRequests2);
+                        return;
+                    }
+
+                    // Sadece request ekle
+                    var newRequest = new PassengerRequest(callingFloor);
+                    newRequest.SimulationTime = CurrentSimulationTime;
+                    newRequest.ElevatorFloorAtRequest = _currentFloor;
+                    newRequest.RequestTime = DateTime.Now;
+                    _pendingRequests.Add(newRequest);
+
+                    AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Yolcu eklendi â†’ AsansÃ¶r 1 yolda (Toplam: {callCountOnFloor} kiÅŸi)");
+                    return;
+                }
+
+                if (elevator2AlreadyAssigned && !elevator1AlreadyAssigned)
+                {
+                    // AsansÃ¶r 2 zaten gidiyor
+
+                    // 10'dan fazla kiÅŸi varsa birinci asansÃ¶rÃ¼ de gÃ¶nder
+                    if (callCountOnFloor > MaxCapacity)
+                    {
+                        AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Kapasite aÅŸÄ±ldÄ±! AsansÃ¶r 1 de gÃ¶nderiliyor (Toplam: {callCountOnFloor} kiÅŸi)");
+                        await HandleElevatorCall(callingFloor, 1, _currentFloor, _pendingRequests);
+                        return;
+                    }
+
+                    // Sadece request ekle
+                    var newRequest = new PassengerRequest(callingFloor);
+                    newRequest.SimulationTime = CurrentSimulationTime;
+                    newRequest.ElevatorFloorAtRequest = _currentFloor2;
+                    newRequest.RequestTime = DateTime.Now;
+                    _pendingRequests2.Add(newRequest);
+
+                    AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Yolcu eklendi â†’ AsansÃ¶r 2 yolda (Toplam: {callCountOnFloor} kiÅŸi)");
+                    return;
+                }
+
+                // 2. Her iki asansÃ¶r de zaten gidiyorsa (10'dan fazla kiÅŸi durumu)
+                if (elevator1AlreadyAssigned && elevator2AlreadyAssigned)
+                {
+                    // Ä°ki asansÃ¶r de yolda, request'i daha az dolu olana ekle
+                    if (_pendingRequests.Count(r => r.PickupFloor == callingFloor) <= _pendingRequests2.Count(r => r.PickupFloor == callingFloor))
+                    {
+                        var newRequest = new PassengerRequest(callingFloor);
+                        newRequest.SimulationTime = CurrentSimulationTime;
+                        newRequest.ElevatorFloorAtRequest = _currentFloor;
+                        newRequest.RequestTime = DateTime.Now;
+                        _pendingRequests.Add(newRequest);
+                        AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Yolcu eklendi â†’ AsansÃ¶r 1'e (Her iki asansÃ¶r de yolda)");
+                    }
+                    else
+                    {
+                        var newRequest = new PassengerRequest(callingFloor);
+                        newRequest.SimulationTime = CurrentSimulationTime;
+                        newRequest.ElevatorFloorAtRequest = _currentFloor2;
+                        newRequest.RequestTime = DateTime.Now;
+                        _pendingRequests2.Add(newRequest);
+                        AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] Kat {callingFloor}: Yolcu eklendi â†’ AsansÃ¶r 2'ye (Her iki asansÃ¶r de yolda)");
+                    }
+                    return;
+                }
+
+                // 3. HiÃ§bir asansÃ¶r o kata gitmiyorsa, SKOR SÄ°STEMÄ°NE gÃ¶re en uygun asansÃ¶rÃ¼ seÃ§
                 int distance1 = Math.Abs(_currentFloor - callingFloor);
                 int distance2 = Math.Abs(_currentFloor2 - callingFloor);
-                int distance3 = Math.Abs(_currentFloor3 - callingFloor);
-                int distance4 = Math.Abs(_currentFloor4 - callingFloor);
 
-                // Her asansörün meþgul olup olmadýðýný kontrol et
                 bool elevator1Busy = _isProcessingRequests || _elevator.State != Models.ElevatorState.Idle;
                 bool elevator2Busy = _isProcessingRequests2 || _elevator2.State != Models.ElevatorState.Idle;
-                bool elevator3Busy = _isProcessingRequests3 || _elevator3.State != Models.ElevatorState.Idle;
-                bool elevator4Busy = _isProcessingRequests4 || _elevator4.State != Models.ElevatorState.Idle;
 
-                // En uygun asansörü seç
-                int selectedElevator = 1;
-                int minDistance = distance1;
+                int score1 = CalculateElevatorScore(callingFloor, _currentFloor, _elevator.State, distance1, elevator1Busy);
+                int score2 = CalculateElevatorScore(callingFloor, _currentFloor2, _elevator2.State, distance2, elevator2Busy);
 
-                // Boþta olan en yakýn asansörü bul
-                if (!elevator2Busy && (elevator1Busy || distance2 < minDistance))
-                {
-                    selectedElevator = 2;
-                    minDistance = distance2;
-                }
-                if (!elevator3Busy && (elevator1Busy || distance3 < minDistance))
-                {
-                    selectedElevator = 3;
-                    minDistance = distance3;
-                }
-                if (!elevator4Busy && (elevator1Busy || distance4 < minDistance))
-                {
-                    selectedElevator = 4;
-                    minDistance = distance4;
-                }
+                int selectedElevator = score2 > score1 ? 2 : 1;
 
-                // Seçilen asansöre göre iþlem yap
+                AddStatusMessage($"[Skor] AsansÃ¶r 1: {score1}, AsansÃ¶r 2: {score2} â†’ AsansÃ¶r {selectedElevator} seÃ§ildi");
+
+                // SeÃ§ilen asansÃ¶re gÃ¶re iÅŸlem yap
                 switch (selectedElevator)
                 {
                     case 1:
@@ -415,87 +612,69 @@ namespace elevator_simulation.ViewModels
                     case 2:
                         await HandleElevatorCall(callingFloor, 2, _currentFloor2, _pendingRequests2);
                         break;
-                    case 3:
-                        await HandleElevatorCall(callingFloor, 3, _currentFloor3, _pendingRequests3);
-                        break;
-                    case 4:
-                        await HandleElevatorCall(callingFloor, 4, _currentFloor4, _pendingRequests4);
-                        break;
                 }
             }
         }
-
+        
         private async Task HandleElevatorCall(int callingFloor, int elevatorNumber, int currentFloor, List<PassengerRequest> pendingRequests)
         {
             var request = new PassengerRequest(callingFloor);
             request.SimulationTime = CurrentSimulationTime;
             request.ElevatorFloorAtRequest = currentFloor;
             request.RequestTime = DateTime.Now;
-
+            
             pendingRequests.Add(request);
-
-            AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] [Asansör {elevatorNumber}] Kat {callingFloor}: Çaðrý geldi");
-
-            // Kat mesafesini hesapla
+            
+            AddStatusMessage($"[{CurrentSimulationTime:hh\\:mm}] [AsansÃ¶r {elevatorNumber}] Kat {callingFloor}: Ã‡aÄŸrÄ± geldi");
+            
             int floorDistance = Math.Abs(callingFloor - currentFloor);
-
+            
             var elevatorState = elevatorNumber switch
             {
                 1 => _elevator.State.ToString(),
                 2 => _elevator2.State.ToString(),
-                3 => _elevator3.State.ToString(),
-                4 => _elevator4.State.ToString(),
                 _ => "Unknown"
             };
-
+            
             var passengerCount = elevatorNumber switch
             {
                 1 => _passengerCount,
                 2 => _passengerCount2,
-                3 => _passengerCount3,
-                4 => _passengerCount4,
                 _ => 0
             };
-
+            
             _mlDataCollector.RecordRequest(
                 CurrentSimulationTime,
                 callingFloor,
                 currentFloor,
                 -1,
                 floorDistance,
-                $"Asansör {elevatorNumber}",
+                $"AsansÃ¶r {elevatorNumber}",
                 0,
                 passengerCount,
                 elevatorState
             );
-
-            // Ayný katta mý kontrol et
+            
             bool isIdleState = elevatorNumber switch
             {
                 1 => _elevator.State == Models.ElevatorState.Idle,
                 2 => _elevator2.State == Models.ElevatorState.Idle,
-                3 => _elevator3.State == Models.ElevatorState.Idle,
-                4 => _elevator4.State == Models.ElevatorState.Idle,
                 _ => false
             };
-
+            
             bool isProcessing = elevatorNumber switch
             {
                 1 => _isProcessingRequests,
                 2 => _isProcessingRequests2,
-                3 => _isProcessingRequests3,
-                4 => _isProcessingRequests4,
                 _ => false
             };
-
+            
             if (callingFloor == currentFloor && isIdleState)
             {
                 switch (elevatorNumber)
                 {
                     case 1: await HandleSameFloorPickup(request); break;
                     case 2: await HandleSameFloorPickup2(request); break;
-                    case 3: await HandleSameFloorPickup3(request); break;
-                    case 4: await HandleSameFloorPickup4(request); break;
                 }
             }
             else if (!isProcessing)
@@ -504,48 +683,26 @@ namespace elevator_simulation.ViewModels
                 {
                     case 1: await ProcessRequests(); break;
                     case 2: await ProcessRequests2(); break;
-                    case 3: await ProcessRequests3(); break;
-                    case 4: await ProcessRequests4(); break;
                 }
             }
         }
-
+        
         private bool CanSelectDestination(object? parameter)
         {
-            // Ýç panel sadece yolcu varken aktif
             return parameter is int targetFloor && 
                    _isInnerPanelOpen && 
                    targetFloor != _currentFloor &&
                    _passengerCount > 0;
         }
-
+        
         private bool CanSelectDestination2(object? parameter)
         {
-            // Ýkinci asansör iç panel sadece yolcu varken aktif
             return parameter is int targetFloor && 
                    _isInnerPanelOpen2 && 
                    targetFloor != _currentFloor2 &&
                    _passengerCount2 > 0;
         }
-
-        private bool CanSelectDestination3(object? parameter)
-        {
-            // Üçüncü asansör iç panel sadece yolcu varken aktif
-            return parameter is int targetFloor && 
-                   _isInnerPanelOpen3 && 
-                   targetFloor != _currentFloor3 &&
-                   _passengerCount3 > 0;
-        }
-
-        private bool CanSelectDestination4(object? parameter)
-        {
-            // Dördüncü asansör iç panel sadece yolcu varken aktif
-            return parameter is int targetFloor && 
-                   _isInnerPanelOpen4 && 
-                   targetFloor != _currentFloor4 &&
-                   _passengerCount4 > 0;
-        }
-
+        
         private void OnSelectDestination(object? parameter)
         {
             if (parameter is int targetFloor)
@@ -554,16 +711,16 @@ namespace elevator_simulation.ViewModels
                     .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == -1)
                     .OrderByDescending(r => r.PickupFloor == _currentFloor)
                     .FirstOrDefault();
-
+                
                 if (lastPickedUp != null)
                 {
                     lastPickedUp.DestinationFloor = targetFloor;
                     _destinationFloors.Add(targetFloor);
-                    AddStatusMessage($"[Asansör 1] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
+                    AddStatusMessage($"[AsansÃ¶r 1] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
                 }
             }
         }
-
+        
         private void OnSelectDestination2(object? parameter)
         {
             if (parameter is int targetFloor)
@@ -572,55 +729,20 @@ namespace elevator_simulation.ViewModels
                     .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == -1)
                     .OrderByDescending(r => r.PickupFloor == _currentFloor2)
                     .FirstOrDefault();
-
+                
                 if (lastPickedUp != null)
                 {
                     lastPickedUp.DestinationFloor = targetFloor;
                     _destinationFloors2.Add(targetFloor);
-                    AddStatusMessage($"[Asansör 2] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
+                    AddStatusMessage($"[AsansÃ¶r 2] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
                 }
             }
         }
-
-        private void OnSelectDestination3(object? parameter)
-        {
-            if (parameter is int targetFloor)
-            {
-                var lastPickedUp = _pendingRequests3
-                    .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == -1)
-                    .OrderByDescending(r => r.PickupFloor == _currentFloor3)
-                    .FirstOrDefault();
-
-                if (lastPickedUp != null)
-                {
-                    lastPickedUp.DestinationFloor = targetFloor;
-                    _destinationFloors3.Add(targetFloor);
-                    AddStatusMessage($"[Asansör 3] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
-                }
-            }
-        }
-
-        private void OnSelectDestination4(object? parameter)
-        {
-            if (parameter is int targetFloor)
-            {
-                var lastPickedUp = _pendingRequests4
-                    .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == -1)
-                    .OrderByDescending(r => r.PickupFloor == _currentFloor4)
-                    .FirstOrDefault();
-
-                if (lastPickedUp != null)
-                {
-                    lastPickedUp.DestinationFloor = targetFloor;
-                    _destinationFloors4.Add(targetFloor);
-                    AddStatusMessage($"[Asansör 4] Kat {lastPickedUp.PickupFloor}: Yolcu bindi, {targetFloor}. kata gidecek");
-                }
-            }
-        }
-
+        
+        // ==================== ASANSÃ–R 1 Ä°ÅžLEMLERÄ° ====================
+        
         private async Task HandleSameFloorPickup(PassengerRequest request)
         {
-            // Kapasite kontrolü
             if (_passengerCount >= MaxCapacity)
             {
                 AddStatusMessage($"Kat {_currentFloor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
@@ -628,12 +750,10 @@ namespace elevator_simulation.ViewModels
                 return;
             }
 
-            // Kapýyý aç
             _elevator.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay = "Kapý Açýlýyor";
+            ElevatorStateDisplay = "KapÄ± AÃ§Ä±lÄ±yor";
             await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
 
-            // Yolcu binme iþlemi
             _elevator.State = Models.ElevatorState.WaitingForPassenger;
             ElevatorStateDisplay = "Yolcu Biniyor";
             await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
@@ -641,29 +761,36 @@ namespace elevator_simulation.ViewModels
             request.Status = RequestStatus.PickedUp;
             PassengerCount++;
 
-            // Bekleme süresi (ayný kattaysa çok kýsa)
             var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
             request.WaitTimeSeconds = waitTimeSeconds;
 
-            // Kat mesafesini hesapla
             int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
 
-            // ML verisi kaydet - Hedef kat henüz bilinmiyor
             _mlDataCollector.RecordRequest(
                 request.SimulationTime,
                 request.PickupFloor,
                 request.ElevatorFloorAtRequest,
-                -1,                          // Hedef kat henüz seçilmedi
+                -1,
                 floorDistance,
-                "Asansör 1",
+                "AsansÃ¶r 1",
                 waitTimeSeconds,
                 _passengerCount - 1,
                 "PickedUp"
             );
 
-            AddStatusMessage($"Kat {_currentFloor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
+            AddStatusMessage($"[AsansÃ¶r 1] Kat {_currentFloor}: Yolcu bindi (Bekleme: {waitTimeSeconds}s) | Doluluk: {Elevator1LoadStatus} ({Elevator1LoadPercentage})");
 
-            // Ýç paneli aç ve hedef seçilene kadar bekle
+            // SayacÄ± gÃ¼ncelle
+            if (_floorCallCounts.ContainsKey(_currentFloor))
+            {
+                _floorCallCounts[_currentFloor] = Math.Max(0, _floorCallCounts[_currentFloor] - 1);
+                if (_floorCallCounts[_currentFloor] == 0)
+                {
+                    _floorCallCounts.Remove(_currentFloor);
+                }
+            }
+
+            // Hedef kat seÃ§imi iÃ§in paneli aÃ§
             IsInnerPanelOpen = true;
 
             int waitCount = 0;
@@ -673,32 +800,35 @@ namespace elevator_simulation.ViewModels
                 waitCount++;
             }
 
+            // Hedef kat seÃ§ildiyse kaydet
+            if (request.DestinationFloor != -1)
+            {
+                _destinationFloors.Add(request.DestinationFloor);
+            }
+
             IsInnerPanelOpen = false;
 
-            // Kapýyý kapat
-            ElevatorStateDisplay = "Kapý Kapanýyor";
+            ElevatorStateDisplay = "KapÄ± KapanÄ±yor";
             await Task.Delay(TimeSpan.FromSeconds(1.0));
 
             _elevator.State = Models.ElevatorState.DoorClosing;
             await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
 
-            // Hedef seçildiyse iþleme devam et
             if (request.DestinationFloor != -1 && !_isProcessingRequests)
             {
                 await ProcessRequests();
             }
         }
-
+        
         private async Task ProcessRequests()
         {
             _isProcessingRequests = true;
-
+            
             while (_pendingRequests.Any(r => r.Status != RequestStatus.Completed) || 
                    _destinationFloors.Count > 0)
             {
-                // Her adýmda yönü ve hedefi yeniden hesapla
                 var direction = DetermineDirection();
-
+                
                 if (direction == 0)
                 {
                     _elevator.State = Models.ElevatorState.Idle;
@@ -706,66 +836,64 @@ namespace elevator_simulation.ViewModels
                     await Task.Delay(500);
                     continue;
                 }
-
-                // Mevcut yöndeki tüm duraklarý al
+                
                 var stopsInDirection = GetAllStopsInDirection(direction);
-
+                
                 if (!stopsInDirection.Any())
                 {
                     await Task.Delay(100);
                     continue;
                 }
-
-                // EN YAKIN katý al
+                
                 var nextStop = stopsInDirection.First();
-
-                // Durumunu güncelle
+                
                 _elevator.State = direction > 0 
                     ? Models.ElevatorState.MovingUp 
                     : Models.ElevatorState.MovingDown;
-                ElevatorStateDisplay = direction > 0 ? "Yukarý Gidiyor" : "Aþaðý Gidiyor";
+                ElevatorStateDisplay = direction > 0 ? "YukarÄ± Gidiyor" : "AÅŸaÄŸÄ± Gidiyor";
 
-                // TEK KAT HAREKET ET
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
-                
+                // AÄŸÄ±rlÄ±k bazlÄ± hÄ±z ayarÄ±
+                double travelTime = CalculateFloorTravelTime(_passengerCount);
+                await Task.Delay(TimeSpan.FromSeconds(travelTime));
+
                 if (direction > 0)
                 {
                     _elevator.CurrentFloor++;
+                    _elevator1TotalDistance++;
                 }
                 else
                 {
                     _elevator.CurrentFloor--;
+                    _elevator1TotalDistance++;
                 }
                 
                 CurrentFloor = _elevator.CurrentFloor;
-
-                // Hedefe ulaþtýk mý?
+                
                 if (_elevator.CurrentFloor == nextStop)
                 {
-                    // Bu katta durulmasý gerekiyor mu?
                     bool hasDropOff = _destinationFloors.Contains(nextStop);
                     var pickupRequests = _pendingRequests
                         .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
                         .ToList();
-
+                    
                     if (hasDropOff || pickupRequests.Any())
                     {
                         await HandleStopOperations(nextStop, hasDropOff, pickupRequests);
                     }
                 }
             }
-
+            
             _isProcessingRequests = false;
             _elevator.State = Models.ElevatorState.Idle;
             ElevatorStateDisplay = "Beklemede";
-            AddStatusMessage("Tüm istekler tamamlandý");
+            AddStatusMessage("TÃ¼m istekler tamamlandÄ±");
         }
-
+        
         private List<int> GetAllStopsInDirection(int direction)
         {
             var stops = new HashSet<int>();
             
-            if (direction > 0) // Yukarý
+            if (direction > 0)
             {
                 foreach (var floor in _destinationFloors.Where(f => f > _currentFloor))
                 {
@@ -779,7 +907,7 @@ namespace elevator_simulation.ViewModels
                 
                 return stops.OrderBy(f => f).ToList();
             }
-            else if (direction < 0) // Aþaðý
+            else if (direction < 0)
             {
                 foreach (var floor in _destinationFloors.Where(f => f < _currentFloor))
                 {
@@ -796,183 +924,249 @@ namespace elevator_simulation.ViewModels
             
             return new List<int>();
         }
-
+        
         private int DetermineDirection()
         {
-            var allTargets = _destinationFloors
-                .Concat(_pendingRequests.Where(r => r.Status == RequestStatus.Pending)
-                                       .Select(r => r.PickupFloor))
+            var pendingPickups = _pendingRequests
+                .Where(r => r.Status == RequestStatus.Pending)
+                .Select(r => r.PickupFloor)
                 .ToList();
-
-            if (!allTargets.Any()) return 0;
-
-            var aboveCount = allTargets.Count(f => f > _currentFloor);
-            var belowCount = allTargets.Count(f => f < _currentFloor);
-
-            if (aboveCount > 0 && belowCount == 0) return 1;
-            if (belowCount > 0 && aboveCount == 0) return -1;
-
-            if (_elevator.State == Models.ElevatorState.MovingUp) return 1;
-            if (_elevator.State == Models.ElevatorState.MovingDown) return -1;
-
-            return aboveCount >= belowCount ? 1 : -1;
+            
+            var allTargets = _destinationFloors.Union(pendingPickups).ToList();
+            
+            if (!allTargets.Any())
+            {
+                return 0;
+            }
+            
+            bool hasUp = allTargets.Any(f => f > _currentFloor);
+            bool hasDown = allTargets.Any(f => f < _currentFloor);
+            
+            if (_elevator.State == Models.ElevatorState.MovingUp && hasUp)
+            {
+                return 1;
+            }
+            else if (_elevator.State == Models.ElevatorState.MovingDown && hasDown)
+            {
+                return -1;
+            }
+            else if (hasUp && !hasDown)
+            {
+                return 1;
+            }
+            else if (hasDown && !hasUp)
+            {
+                return -1;
+            }
+            else if (hasUp && hasDown)
+            {
+                var closestUp = allTargets.Where(f => f > _currentFloor).Min();
+                var closestDown = allTargets.Where(f => f < _currentFloor).Max();
+                
+                var distanceUp = closestUp - _currentFloor;
+                var distanceDown = _currentFloor - closestDown;
+                
+                return distanceUp <= distanceDown ? 1 : -1;
+            }
+            
+            return 0;
         }
-
+        
         private async Task HandleStopOperations(int floor, bool hasDropOff, List<PassengerRequest> pickupRequests)
         {
             _elevator.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay = "Kapý Açýlýyor";
+            ElevatorStateDisplay = "KapÄ± AÃ§Ä±lÄ±yor";
             await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
-
-            // 1. ÖNCE YOLCU ÝNDÝRME
+            
             if (hasDropOff)
             {
                 _elevator.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay = "Yolcu Ýniyor";
-                
-                var droppingPassengers = _pendingRequests
-                    .Where(r => r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp)
-                    .ToList();
-
+                ElevatorStateDisplay = "Yolcu Ä°niyor";
                 await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                foreach (var request in droppingPassengers)
+                
+                var completedRequests = _pendingRequests
+                    .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == floor)
+                    .ToList();
+                
+                foreach (var req in completedRequests)
                 {
-                    request.Status = RequestStatus.Completed;
-                    AddStatusMessage($"Kat {floor}: {request.PickupFloor}. kattan binen yolcu indi");
+                    req.Status = RequestStatus.Completed;
+                    PassengerCount--;
+                    
+                    var totalTravelTime = (int)(DateTime.Now - req.RequestTime).TotalSeconds;
+                    int floorDistance = Math.Abs(req.DestinationFloor - req.PickupFloor);
+                    
+                    _mlDataCollector.RecordRequest(
+                        req.SimulationTime,
+                        req.PickupFloor,
+                        req.ElevatorFloorAtRequest,
+                        req.DestinationFloor,
+                        floorDistance,
+                        "AsansÃ¶r 1",
+                        totalTravelTime,
+                        _passengerCount,
+                        "Completed"
+                    );
+                    
+                    AddStatusMessage($"Kat {floor}: Yolcu indi (Toplam sÃ¼re: {totalTravelTime} saniye, Mesafe: {floorDistance} kat)");
                 }
-
-                while (_destinationFloors.Remove(floor)) { }
-                PassengerCount -= droppingPassengers.Count;
-                await Task.Delay(500);
+                
+                _destinationFloors.Remove(floor);
             }
-
-            // 2. SONRA YOLCU ALMA
-            foreach (var pickupRequest in pickupRequests)
+            
+            if (pickupRequests.Any() && _passengerCount < MaxCapacity)
             {
-                if (_passengerCount >= MaxCapacity)
-                {
-                    AddStatusMessage($"Kat {floor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                    break;
-                }
-
                 _elevator.State = Models.ElevatorState.WaitingForPassenger;
                 ElevatorStateDisplay = "Yolcu Biniyor";
                 await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
 
-                pickupRequest.Status = RequestStatus.PickedUp;
-                PassengerCount++;
+                int pickupCount = 0;
+                int remainingPassengers = 0;
 
-                // BEKLEME SÜRESÝNÝ HESAPLA ve ML VERÝSÝNÝ KAYDET
-                var waitTimeSeconds = (int)(DateTime.Now - pickupRequest.RequestTime).TotalSeconds;
-                pickupRequest.WaitTimeSeconds = waitTimeSeconds;
-
-                // Kat mesafesini hesapla
-                int floorDistance = Math.Abs(pickupRequest.PickupFloor - pickupRequest.ElevatorFloorAtRequest);
-
-                _mlDataCollector.RecordRequest(
-                    pickupRequest.SimulationTime,
-                    pickupRequest.PickupFloor,
-                    pickupRequest.ElevatorFloorAtRequest,
-                    -1,                          // Hedef kat henüz seçilmedi
-                    floorDistance,
-                    "Asansör 1",
-                    waitTimeSeconds,
-                    _passengerCount - 1,         // Bu yolcu binmeden önceki sayý
-                    "PickedUp"                   // Yolcu alýndý
-                );
-
-                AddStatusMessage($"Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-                
-                // Ýç paneli aç ve hedef seçilene kadar bekle
-                IsInnerPanelOpen = true;
-                
-                // Hedef seçilene kadar bekle (maksimum 30 saniye)
-                int waitCount = 0;
-                while (pickupRequest.DestinationFloor == -1 && waitCount < 300)
+                // Ã–nce tÃ¼m yolcularÄ± bin
+                foreach (var request in pickupRequests)
                 {
-                    await Task.Delay(100);
-                    waitCount++;
+                    if (_passengerCount >= MaxCapacity)
+                    {
+                        remainingPassengers++;
+                        AddStatusMessage($"[AsansÃ¶r 1] Kat {floor}: Kapasite dolu, yolcu alÄ±namadÄ±");
+                        continue;
+                    }
+
+                    request.Status = RequestStatus.PickedUp;
+                    PassengerCount++;
+                    pickupCount++;
+
+                    var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
+                    request.WaitTimeSeconds = waitTimeSeconds;
+
+                    int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
+
+                    _mlDataCollector.RecordRequest(
+                        request.SimulationTime,
+                        request.PickupFloor,
+                        request.ElevatorFloorAtRequest,
+                        -1,
+                        floorDistance,
+                        "AsansÃ¶r 1",
+                        waitTimeSeconds,
+                        _passengerCount - 1,
+                        "PickedUp"
+                    );
+
+                    AddStatusMessage($"[AsansÃ¶r 1] Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds}s) | Doluluk: {Elevator1LoadStatus} ({Elevator1LoadPercentage})");
                 }
-                
+
+                // Åžimdi TÃœM yolcular iÃ§in hedef kat seÃ§imini bekle
+                IsInnerPanelOpen = true;
+
+                var pickedUpPassengers = pickupRequests.Where(r => r.Status == RequestStatus.PickedUp).ToList();
+
+                if (pickedUpPassengers.Any())
+                {
+                    Elevator1WaitingPassengers = pickedUpPassengers.Count;
+                    AddStatusMessage($"[AsansÃ¶r 1] Kat {floor}: {pickedUpPassengers.Count} yolcu hedef kat seÃ§iyor...");
+
+                    int maxWaitCount = 300; // 30 saniye toplam
+                    int waitCount = 0;
+
+                    // TÃ¼m yolcular hedef katlarÄ±nÄ± seÃ§ene kadar bekle
+                    while (pickedUpPassengers.Any(r => r.DestinationFloor == -1) && waitCount < maxWaitCount)
+                    {
+                        await Task.Delay(100);
+                        waitCount++;
+
+                        // Progress gÃ¼ncelle (kaÃ§ kiÅŸi seÃ§ti)
+                        int selectedCount = pickedUpPassengers.Count(r => r.DestinationFloor != -1);
+                        Elevator1WaitingPassengers = pickedUpPassengers.Count - selectedCount;
+                    }
+
+                    // Hedef katlarÄ±nÄ± seÃ§enleri kaydet
+                    foreach (var passenger in pickedUpPassengers.Where(p => p.DestinationFloor != -1))
+                    {
+                        _destinationFloors.Add(passenger.DestinationFloor);
+                    }
+                }
+
+                Elevator1WaitingPassengers = 0;
                 IsInnerPanelOpen = false;
-                
-                // Eðer hedef seçildiyse mesaj zaten OnSelectDestination'da eklendi
-                await Task.Delay(300);
+
+                // Bu kattan alÄ±nan yolcu sayÄ±sÄ± kadar sayacÄ± azalt
+                if (_floorCallCounts.ContainsKey(floor))
+                {
+                    _floorCallCounts[floor] = Math.Max(0, _floorCallCounts[floor] - pickupCount);
+                    if (_floorCallCounts[floor] == 0)
+                    {
+                        _floorCallCounts.Remove(floor);
+                    }
+                }
+
+                // EÄŸer kapasite doldu ve hala bekleyen yolcular varsa, AsansÃ¶r 2'yi Ã§aÄŸÄ±r
+                if (remainingPassengers > 0 && !_isProcessingRequests2)
+                {
+                    // Bekleyen istekleri AsansÃ¶r 2'ye aktar
+                    var unhandledRequests = pickupRequests.Where(r => r.Status == RequestStatus.Pending).ToList();
+                    if (unhandledRequests.Any())
+                    {
+                        AddStatusMessage($"[AsansÃ¶r 1] Kat {floor}: {remainingPassengers} yolcu iÃ§in AsansÃ¶r 2 Ã§aÄŸrÄ±lÄ±yor");
+
+                        // AsansÃ¶r 2'nin bu kata gÃ¶nderilmediÄŸinden emin ol
+                        bool elevator2AlreadyAssigned = _pendingRequests2.Any(r => 
+                            r.PickupFloor == floor && r.Status == RequestStatus.Pending);
+
+                        if (!elevator2AlreadyAssigned)
+                        {
+                            // Ä°lk bekleyen isteÄŸi AsansÃ¶r 2'ye aktar
+                            var firstUnhandled = unhandledRequests.First();
+                            firstUnhandled.Status = RequestStatus.Pending; // Reset status
+                            _pendingRequests.Remove(firstUnhandled);
+                            _pendingRequests2.Add(firstUnhandled);
+
+                            // AsansÃ¶r 2'nin iÅŸlemeye baÅŸlamasÄ±nÄ± tetikle
+                            if (!_isProcessingRequests2)
+                            {
+                                _ = ProcessRequests2();
+                            }
+                        }
+                    }
+                }
             }
-
-            ElevatorStateDisplay = "Kapý Kapanýyor";
+            
+            ElevatorStateDisplay = "KapÄ± KapanÄ±yor";
             await Task.Delay(TimeSpan.FromSeconds(1.0));
-
+            
             _elevator.State = Models.ElevatorState.DoorClosing;
             await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
         }
-
-        private async Task MoveToFloor(int targetFloor)
+        
+        private async Task AnimateDoor(double from, double to, double durationSeconds)
         {
-            if (_elevator.CurrentFloor < targetFloor)
-            {
-                _elevator.State = Models.ElevatorState.MovingUp;
-                ElevatorStateDisplay = "Yukarý Çýkýyor";
-                
-                while (_elevator.CurrentFloor < targetFloor)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
-                    _elevator.CurrentFloor++;
-                    CurrentFloor = _elevator.CurrentFloor;
-                }
-            }
-            else if (_elevator.CurrentFloor > targetFloor)
-            {
-                _elevator.State = Models.ElevatorState.MovingDown;
-                ElevatorStateDisplay = "Aþaðý Ýniyor";
-                
-                while (_elevator.CurrentFloor > targetFloor)
-                {
-                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
-                    _elevator.CurrentFloor--;
-                    CurrentFloor = _elevator.CurrentFloor;
-                }
-            }
-        }
-
-        private async Task AnimateDoor(double from, double to, double duration)
-        {
-            const int steps = 20;
-            double stepDuration = duration / steps;
+            int steps = 20;
             double increment = (to - from) / steps;
-
-            for (int i = 0; i <= steps; i++)
+            double delay = (durationSeconds * 1000) / steps;
+            
+            for (int i = 0; i < steps; i++)
             {
                 DoorOpenAmount = from + (increment * i);
-                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
+                await Task.Delay((int)delay);
             }
-
+            
             DoorOpenAmount = to;
         }
-
-        private void Timer_Tick(object? sender, EventArgs e)
-        {
-            if (_isSimulationRunning)
-            {
-                var elapsed = DateTime.Now - _simulationStartTime;
-                TotalTime = elapsed.ToString(@"hh\:mm\:ss");
-            }
-        }
-
-        // ==================== ÝKÝNCÝ ASANSÖR METODLARÝ ====================
-
+        
+        // ==================== ASANSÃ–R 2 Ä°ÅžLEMLERÄ° ====================
+        
         private async Task HandleSameFloorPickup2(PassengerRequest request)
         {
             if (_passengerCount2 >= MaxCapacity)
             {
-                AddStatusMessage($"[Asansör 2] Kat {_currentFloor2}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
+                AddStatusMessage($"[AsansÃ¶r 2] Kat {_currentFloor2}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
                 request.Status = RequestStatus.Completed;
                 return;
             }
 
             _elevator2.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay2 = "Kapý Açýlýyor";
+            ElevatorStateDisplay2 = "KapÄ± AÃ§Ä±lÄ±yor";
             await AnimateDoor2(0.0, 1.0, ElevatorModel.DoorOperationTime);
 
             _elevator2.State = Models.ElevatorState.WaitingForPassenger;
@@ -985,23 +1179,33 @@ namespace elevator_simulation.ViewModels
             var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
             request.WaitTimeSeconds = waitTimeSeconds;
 
-            // Kat mesafesini hesapla
             int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
 
             _mlDataCollector.RecordRequest(
                 request.SimulationTime,
                 request.PickupFloor,
                 request.ElevatorFloorAtRequest,
-                -1,                          // Hedef kat henüz seçilmedi
+                -1,
                 floorDistance,
-                "Asansör 2",
+                "AsansÃ¶r 2",
                 waitTimeSeconds,
                 _passengerCount2 - 1,
                 "PickedUp"
             );
 
-            AddStatusMessage($"[Asansör 2] Kat {_currentFloor2}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
+            AddStatusMessage($"[AsansÃ¶r 2] Kat {_currentFloor2}: Yolcu bindi (Bekleme: {waitTimeSeconds}s) | Doluluk: {Elevator2LoadStatus} ({Elevator2LoadPercentage})");
 
+            // SayacÄ± gÃ¼ncelle
+            if (_floorCallCounts.ContainsKey(_currentFloor2))
+            {
+                _floorCallCounts[_currentFloor2] = Math.Max(0, _floorCallCounts[_currentFloor2] - 1);
+                if (_floorCallCounts[_currentFloor2] == 0)
+                {
+                    _floorCallCounts.Remove(_currentFloor2);
+                }
+            }
+
+            // Hedef kat seÃ§imi iÃ§in paneli aÃ§
             IsInnerPanelOpen2 = true;
 
             int waitCount = 0;
@@ -1011,9 +1215,15 @@ namespace elevator_simulation.ViewModels
                 waitCount++;
             }
 
+            // Hedef kat seÃ§ildiyse kaydet
+            if (request.DestinationFloor != -1)
+            {
+                _destinationFloors2.Add(request.DestinationFloor);
+            }
+
             IsInnerPanelOpen2 = false;
 
-            ElevatorStateDisplay2 = "Kapý Kapanýyor";
+            ElevatorStateDisplay2 = "KapÄ± KapanÄ±yor";
             await Task.Delay(TimeSpan.FromSeconds(1.0));
 
             _elevator2.State = Models.ElevatorState.DoorClosing;
@@ -1024,16 +1234,16 @@ namespace elevator_simulation.ViewModels
                 await ProcessRequests2();
             }
         }
-
+        
         private async Task ProcessRequests2()
         {
             _isProcessingRequests2 = true;
-
+            
             while (_pendingRequests2.Any(r => r.Status != RequestStatus.Completed) || 
                    _destinationFloors2.Count > 0)
             {
                 var direction = DetermineDirection2();
-
+                
                 if (direction == 0)
                 {
                     _elevator2.State = Models.ElevatorState.Idle;
@@ -1041,70 +1251,75 @@ namespace elevator_simulation.ViewModels
                     await Task.Delay(500);
                     continue;
                 }
-
+                
                 var stopsInDirection = GetAllStopsInDirection2(direction);
-
+                
                 if (!stopsInDirection.Any())
                 {
                     await Task.Delay(100);
                     continue;
                 }
-
+                
                 var nextStop = stopsInDirection.First();
-
+                
                 _elevator2.State = direction > 0 
                     ? Models.ElevatorState.MovingUp 
                     : Models.ElevatorState.MovingDown;
-                ElevatorStateDisplay2 = direction > 0 ? "Yukarý Gidiyor" : "Aþaðý Gidiyor";
+                ElevatorStateDisplay2 = direction > 0 ? "YukarÄ± Gidiyor" : "AÅŸaÄŸÄ± Gidiyor";
 
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                // AÄŸÄ±rlÄ±k bazlÄ± hÄ±z ayarÄ±
+                double travelTime = CalculateFloorTravelTime(_passengerCount2);
+                await Task.Delay(TimeSpan.FromSeconds(travelTime));
 
                 if (direction > 0)
                 {
                     _elevator2.CurrentFloor++;
+                    _elevator2TotalDistance++;
                 }
                 else
                 {
                     _elevator2.CurrentFloor--;
+                    _elevator2TotalDistance++;
                 }
-
+                
                 CurrentFloor2 = _elevator2.CurrentFloor;
-
+                
                 if (_elevator2.CurrentFloor == nextStop)
                 {
                     bool hasDropOff = _destinationFloors2.Contains(nextStop);
                     var pickupRequests = _pendingRequests2
                         .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
                         .ToList();
-
+                    
                     if (hasDropOff || pickupRequests.Any())
                     {
                         await HandleStopOperations2(nextStop, hasDropOff, pickupRequests);
                     }
                 }
             }
-
+            
             _isProcessingRequests2 = false;
             _elevator2.State = Models.ElevatorState.Idle;
             ElevatorStateDisplay2 = "Beklemede";
+            AddStatusMessage("[AsansÃ¶r 2] TÃ¼m istekler tamamlandÄ±");
         }
-
+        
         private List<int> GetAllStopsInDirection2(int direction)
         {
             var stops = new HashSet<int>();
-
+            
             if (direction > 0)
             {
                 foreach (var floor in _destinationFloors2.Where(f => f > _currentFloor2))
                 {
                     stops.Add(floor);
                 }
-
+                
                 foreach (var request in _pendingRequests2.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor > _currentFloor2))
                 {
                     stops.Add(request.PickupFloor);
                 }
-
+                
                 return stops.OrderBy(f => f).ToList();
             }
             else if (direction < 0)
@@ -1113,701 +1328,588 @@ namespace elevator_simulation.ViewModels
                 {
                     stops.Add(floor);
                 }
-
+                
                 foreach (var request in _pendingRequests2.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor < _currentFloor2))
                 {
                     stops.Add(request.PickupFloor);
                 }
-
+                
                 return stops.OrderByDescending(f => f).ToList();
             }
-
+            
             return new List<int>();
         }
-
+        
         private int DetermineDirection2()
         {
-            var allTargets = _destinationFloors2
-                .Concat(_pendingRequests2.Where(r => r.Status == RequestStatus.Pending)
-                                       .Select(r => r.PickupFloor))
+            var pendingPickups = _pendingRequests2
+                .Where(r => r.Status == RequestStatus.Pending)
+                .Select(r => r.PickupFloor)
                 .ToList();
-
-            if (!allTargets.Any()) return 0;
-
-            var aboveCount = allTargets.Count(f => f > _currentFloor2);
-            var belowCount = allTargets.Count(f => f < _currentFloor2);
-
-            if (aboveCount > 0 && belowCount == 0) return 1;
-            if (belowCount > 0 && aboveCount == 0) return -1;
-
-            if (_elevator2.State == Models.ElevatorState.MovingUp) return 1;
-            if (_elevator2.State == Models.ElevatorState.MovingDown) return -1;
-
-            return aboveCount >= belowCount ? 1 : -1;
+            
+            var allTargets = _destinationFloors2.Union(pendingPickups).ToList();
+            
+            if (!allTargets.Any())
+            {
+                return 0;
+            }
+            
+            bool hasUp = allTargets.Any(f => f > _currentFloor2);
+            bool hasDown = allTargets.Any(f => f < _currentFloor2);
+            
+            if (_elevator2.State == Models.ElevatorState.MovingUp && hasUp)
+            {
+                return 1;
+            }
+            else if (_elevator2.State == Models.ElevatorState.MovingDown && hasDown)
+            {
+                return -1;
+            }
+            else if (hasUp && !hasDown)
+            {
+                return 1;
+            }
+            else if (hasDown && !hasUp)
+            {
+                return -1;
+            }
+            else if (hasUp && hasDown)
+            {
+                var closestUp = allTargets.Where(f => f > _currentFloor2).Min();
+                var closestDown = allTargets.Where(f => f < _currentFloor2).Max();
+                
+                var distanceUp = closestUp - _currentFloor2;
+                var distanceDown = _currentFloor2 - closestDown;
+                
+                return distanceUp <= distanceDown ? 1 : -1;
+            }
+            
+            return 0;
         }
-
+        
         private async Task HandleStopOperations2(int floor, bool hasDropOff, List<PassengerRequest> pickupRequests)
         {
             _elevator2.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay2 = "Kapý Açýlýyor";
+            ElevatorStateDisplay2 = "KapÄ± AÃ§Ä±lÄ±yor";
             await AnimateDoor2(0.0, 1.0, ElevatorModel.DoorOperationTime);
-
+            
             if (hasDropOff)
             {
                 _elevator2.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay2 = "Yolcu Ýniyor";
-
-                var droppingPassengers = _pendingRequests2
-                    .Where(r => r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp)
-                    .ToList();
-
+                ElevatorStateDisplay2 = "Yolcu Ä°niyor";
                 await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                foreach (var request in droppingPassengers)
+                
+                var completedRequests = _pendingRequests2
+                    .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == floor)
+                    .ToList();
+                
+                foreach (var req in completedRequests)
                 {
-                    request.Status = RequestStatus.Completed;
-                    AddStatusMessage($"[Asansör 2] Kat {floor}: {request.PickupFloor}. kattan binen yolcu indi");
+                    req.Status = RequestStatus.Completed;
+                    PassengerCount2--;
+                    
+                    var totalTravelTime = (int)(DateTime.Now - req.RequestTime).TotalSeconds;
+                    int floorDistance = Math.Abs(req.DestinationFloor - req.PickupFloor);
+                    
+                    _mlDataCollector.RecordRequest(
+                        req.SimulationTime,
+                        req.PickupFloor,
+                        req.ElevatorFloorAtRequest,
+                        req.DestinationFloor,
+                        floorDistance,
+                        "AsansÃ¶r 2",
+                        totalTravelTime,
+                        _passengerCount2,
+                        "Completed"
+                    );
+                    
+                    AddStatusMessage($"[AsansÃ¶r 2] Kat {floor}: Yolcu indi (Toplam sÃ¼re: {totalTravelTime} saniye, Mesafe: {floorDistance} kat)");
                 }
-
-                while (_destinationFloors2.Remove(floor)) { }
-                PassengerCount2 -= droppingPassengers.Count;
-                await Task.Delay(500);
+                
+                _destinationFloors2.Remove(floor);
             }
-
-            foreach (var pickupRequest in pickupRequests)
+            
+            if (pickupRequests.Any() && _passengerCount2 < MaxCapacity)
             {
-                if (_passengerCount2 >= MaxCapacity)
-                {
-                    AddStatusMessage($"[Asansör 2] Kat {floor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                    break;
-                }
-
                 _elevator2.State = Models.ElevatorState.WaitingForPassenger;
                 ElevatorStateDisplay2 = "Yolcu Biniyor";
                 await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
 
-                pickupRequest.Status = RequestStatus.PickedUp;
-                PassengerCount2++;
+                int pickupCount = 0;
+                int remainingPassengers = 0;
 
-                var waitTimeSeconds = (int)(DateTime.Now - pickupRequest.RequestTime).TotalSeconds;
-                pickupRequest.WaitTimeSeconds = waitTimeSeconds;
-
-                // Kat mesafesini hesapla
-                int floorDistance = Math.Abs(pickupRequest.PickupFloor - pickupRequest.ElevatorFloorAtRequest);
-
-                _mlDataCollector.RecordRequest(
-                    pickupRequest.SimulationTime,
-                    pickupRequest.PickupFloor,
-                    pickupRequest.ElevatorFloorAtRequest,
-                    -1,                          // Hedef kat henüz seçilmedi
-                    floorDistance,
-                    "Asansör 2",
-                    waitTimeSeconds,
-                    _passengerCount2 - 1,
-                    "PickedUp"
-                );
-
-                AddStatusMessage($"[Asansör 2] Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-
-                IsInnerPanelOpen2 = true;
-
-                int waitCount = 0;
-                while (pickupRequest.DestinationFloor == -1 && waitCount < 300)
+                // Ã–nce tÃ¼m yolcularÄ± bin
+                foreach (var request in pickupRequests)
                 {
-                    await Task.Delay(100);
-                    waitCount++;
+                    if (_passengerCount2 >= MaxCapacity)
+                    {
+                        remainingPassengers++;
+                        AddStatusMessage($"[AsansÃ¶r 2] Kat {floor}: Kapasite dolu, yolcu alÄ±namadÄ±");
+                        continue;
+                    }
+
+                    request.Status = RequestStatus.PickedUp;
+                    PassengerCount2++;
+                    pickupCount++;
+
+                    var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
+                    request.WaitTimeSeconds = waitTimeSeconds;
+
+                    int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
+
+                    _mlDataCollector.RecordRequest(
+                        request.SimulationTime,
+                        request.PickupFloor,
+                        request.ElevatorFloorAtRequest,
+                        -1,
+                        floorDistance,
+                        "AsansÃ¶r 2",
+                        waitTimeSeconds,
+                        _passengerCount2 - 1,
+                        "PickedUp"
+                    );
+
+                    AddStatusMessage($"[AsansÃ¶r 2] Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds}s) | Doluluk: {Elevator2LoadStatus} ({Elevator2LoadPercentage})");
                 }
 
+                // Åžimdi TÃœM yolcular iÃ§in hedef kat seÃ§imini bekle
+                IsInnerPanelOpen2 = true;
+
+                var pickedUpPassengers = pickupRequests.Where(r => r.Status == RequestStatus.PickedUp).ToList();
+
+                if (pickedUpPassengers.Any())
+                {
+                    Elevator2WaitingPassengers = pickedUpPassengers.Count;
+                    AddStatusMessage($"[AsansÃ¶r 2] Kat {floor}: {pickedUpPassengers.Count} yolcu hedef kat seÃ§iyor...");
+
+                    int maxWaitCount = 300; // 30 saniye toplam
+                    int waitCount = 0;
+
+                    // TÃ¼m yolcular hedef katlarÄ±nÄ± seÃ§ene kadar bekle
+                    while (pickedUpPassengers.Any(r => r.DestinationFloor == -1) && waitCount < maxWaitCount)
+                    {
+                        await Task.Delay(100);
+                        waitCount++;
+
+                        // Progress gÃ¼ncelle (kaÃ§ kiÅŸi seÃ§ti)
+                        int selectedCount = pickedUpPassengers.Count(r => r.DestinationFloor != -1);
+                        Elevator2WaitingPassengers = pickedUpPassengers.Count - selectedCount;
+                    }
+
+                    // Hedef katlarÄ±nÄ± seÃ§enleri kaydet
+                    foreach (var passenger in pickedUpPassengers.Where(p => p.DestinationFloor != -1))
+                    {
+                        _destinationFloors2.Add(passenger.DestinationFloor);
+                    }
+                }
+
+                Elevator2WaitingPassengers = 0;
                 IsInnerPanelOpen2 = false;
-                await Task.Delay(300);
+
+                // Bu kattan alÄ±nan yolcu sayÄ±sÄ± kadar sayacÄ± azalt
+                if (_floorCallCounts.ContainsKey(floor))
+                {
+                    _floorCallCounts[floor] = Math.Max(0, _floorCallCounts[floor] - pickupCount);
+                    if (_floorCallCounts[floor] == 0)
+                    {
+                        _floorCallCounts.Remove(floor);
+                    }
+                }
+
+                // EÄŸer kapasite doldu ve hala bekleyen yolcular varsa, AsansÃ¶r 1'i Ã§aÄŸÄ±r
+                if (remainingPassengers > 0 && !_isProcessingRequests)
+                {
+                    // Bekleyen istekleri AsansÃ¶r 1'e aktar
+                    var unhandledRequests = pickupRequests.Where(r => r.Status == RequestStatus.Pending).ToList();
+                    if (unhandledRequests.Any())
+                    {
+                        AddStatusMessage($"[AsansÃ¶r 2] Kat {floor}: {remainingPassengers} yolcu iÃ§in AsansÃ¶r 1 Ã§aÄŸrÄ±lÄ±yor");
+
+                        // AsansÃ¶r 1'in bu kata gÃ¶nderilmediÄŸinden emin ol
+                        bool elevator1AlreadyAssigned = _pendingRequests.Any(r => 
+                            r.PickupFloor == floor && r.Status == RequestStatus.Pending);
+
+                        if (!elevator1AlreadyAssigned)
+                        {
+                            // Ä°lk bekleyen isteÄŸi AsansÃ¶r 1'e aktar
+                            var firstUnhandled = unhandledRequests.First();
+                            firstUnhandled.Status = RequestStatus.Pending; // Reset status
+                            _pendingRequests2.Remove(firstUnhandled);
+                            _pendingRequests.Add(firstUnhandled);
+
+                            // AsansÃ¶r 1'in iÅŸlemeye baÅŸlamasÄ±nÄ± tetikle
+                            if (!_isProcessingRequests)
+                            {
+                                _ = ProcessRequests();
+                            }
+                        }
+                    }
+                }
             }
-
-            ElevatorStateDisplay2 = "Kapý Kapanýyor";
+            
+            ElevatorStateDisplay2 = "KapÄ± KapanÄ±yor";
             await Task.Delay(TimeSpan.FromSeconds(1.0));
-
+            
             _elevator2.State = Models.ElevatorState.DoorClosing;
             await AnimateDoor2(1.0, 0.0, ElevatorModel.DoorOperationTime);
         }
-
-        private async Task AnimateDoor2(double from, double to, double duration)
+        
+        private async Task AnimateDoor2(double from, double to, double durationSeconds)
         {
-            const int steps = 20;
-            double stepDuration = duration / steps;
+            int steps = 20;
             double increment = (to - from) / steps;
-
-            for (int i = 0; i <= steps; i++)
+            double delay = (durationSeconds * 1000) / steps;
+            
+            for (int i = 0; i < steps; i++)
             {
                 DoorOpenAmount2 = from + (increment * i);
-                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
+                await Task.Delay((int)delay);
             }
-
+            
             DoorOpenAmount2 = to;
         }
+        
+        // ==================== TIMER ====================
 
-        // ==================== ÜÇÜNCÜ ASANSÖR METODLARÝ ====================
-
-        private async Task HandleSameFloorPickup3(PassengerRequest request)
+        private void Timer_Tick(object? sender, EventArgs e)
         {
-            if (_passengerCount3 >= MaxCapacity)
+            if (_isSimulationRunning)
             {
-                AddStatusMessage($"[Asansör 3] Kat {_currentFloor3}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                request.Status = RequestStatus.Completed;
-                return;
-            }
+                var elapsed = DateTime.Now - _simulationStartTime;
+                TotalTime = elapsed.ToString(@"hh\:mm\:ss");
+                CurrentSimulationTime = elapsed;
 
-            _elevator3.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay3 = "Kapý Açýlýyor";
-            await AnimateDoor3(0.0, 1.0, ElevatorModel.DoorOperationTime);
+                // Enerji tasarrufu kontrolÃ¼
+                CheckEnergyModeAndPark();
 
-            _elevator3.State = Models.ElevatorState.WaitingForPassenger;
-            ElevatorStateDisplay3 = "Yolcu Biniyor";
-            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-            request.Status = RequestStatus.PickedUp;
-            PassengerCount3++;
-
-            var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
-            request.WaitTimeSeconds = waitTimeSeconds;
-
-            int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
-
-            _mlDataCollector.RecordRequest(
-                request.SimulationTime,
-                request.PickupFloor,
-                request.ElevatorFloorAtRequest,
-                -1,
-                floorDistance,
-                "Asansör 3",
-                waitTimeSeconds,
-                _passengerCount3 - 1,
-                "PickedUp"
-            );
-
-            AddStatusMessage($"[Asansör 3] Kat {_currentFloor3}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-
-            IsInnerPanelOpen3 = true;
-
-            int waitCount = 0;
-            while (request.DestinationFloor == -1 && waitCount < 300)
-            {
-                await Task.Delay(100);
-                waitCount++;
-            }
-
-            IsInnerPanelOpen3 = false;
-
-            ElevatorStateDisplay3 = "Kapý Kapanýyor";
-            await Task.Delay(TimeSpan.FromSeconds(1.0));
-
-            _elevator3.State = Models.ElevatorState.DoorClosing;
-            await AnimateDoor3(1.0, 0.0, ElevatorModel.DoorOperationTime);
-
-            if (request.DestinationFloor != -1 && !_isProcessingRequests3)
-            {
-                await ProcessRequests3();
+                // Uzun bekleyen yolcularÄ± kontrol et (her saniye)
+                if (elapsed.Milliseconds % 1000 < 100)
+                {
+                    CheckLongWaitingPassengers();
+                }
             }
         }
 
-        private async Task ProcessRequests3()
+        /// <summary>
+        /// BoÅŸta kalan asansÃ¶rleri enerji tasarrufu iÃ§in zemin kata gÃ¶nderir
+        /// </summary>
+        private void CheckEnergyModeAndPark()
         {
-            _isProcessingRequests3 = true;
-
-            while (_pendingRequests3.Any(r => r.Status != RequestStatus.Completed) || 
-                   _destinationFloors3.Count > 0)
+            // AsansÃ¶r 1 kontrolÃ¼
+            if (_elevator.State == Models.ElevatorState.Idle && !_isProcessingRequests)
             {
-                var direction = DetermineDirection3();
-
-                if (direction == 0)
+                if (_elevator1IdleStartTime == null)
                 {
-                    _elevator3.State = Models.ElevatorState.Idle;
-                    ElevatorStateDisplay3 = "Beklemede";
-                    await Task.Delay(500);
-                    continue;
-                }
-
-                var stopsInDirection = GetAllStopsInDirection3(direction);
-
-                if (!stopsInDirection.Any())
-                {
-                    await Task.Delay(100);
-                    continue;
-                }
-
-                var nextStop = stopsInDirection.First();
-
-                _elevator3.State = direction > 0 
-                    ? Models.ElevatorState.MovingUp 
-                    : Models.ElevatorState.MovingDown;
-                ElevatorStateDisplay3 = direction > 0 ? "Yukarý Gidiyor" : "Aþaðý Gidiyor";
-
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
-
-                if (direction > 0)
-                {
-                    _elevator3.CurrentFloor++;
+                    _elevator1IdleStartTime = DateTime.Now;
                 }
                 else
                 {
-                    _elevator3.CurrentFloor--;
-                }
-
-                CurrentFloor3 = _elevator3.CurrentFloor;
-
-                if (_elevator3.CurrentFloor == nextStop)
-                {
-                    bool hasDropOff = _destinationFloors3.Contains(nextStop);
-                    var pickupRequests = _pendingRequests3
-                        .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
-                        .ToList();
-
-                    if (hasDropOff || pickupRequests.Any())
+                    var idleDuration = DateTime.Now - _elevator1IdleStartTime.Value;
+                    if (idleDuration >= _idleTimeBeforeParking && _currentFloor != ParkingFloor)
                     {
-                        await HandleStopOperations3(nextStop, hasDropOff, pickupRequests);
+                        AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 1] Enerji tasarrufu: {(int)idleDuration.TotalSeconds}s boÅŸta, zemin kata dÃ¶nÃ¼yor");
+                        _ = ParkElevator(1);
+                        _elevator1IdleStartTime = null;
                     }
                 }
             }
-
-            _isProcessingRequests3 = false;
-            _elevator3.State = Models.ElevatorState.Idle;
-            ElevatorStateDisplay3 = "Beklemede";
-        }
-
-        private List<int> GetAllStopsInDirection3(int direction)
-        {
-            var stops = new HashSet<int>();
-
-            if (direction > 0)
+            else
             {
-                foreach (var floor in _destinationFloors3.Where(f => f > _currentFloor3))
-                {
-                    stops.Add(floor);
-                }
-
-                foreach (var request in _pendingRequests3.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor > _currentFloor3))
-                {
-                    stops.Add(request.PickupFloor);
-                }
-
-                return stops.OrderBy(f => f).ToList();
+                _elevator1IdleStartTime = null;
             }
 
-            if (direction < 0)
+            // AsansÃ¶r 2 kontrolÃ¼
+            if (_elevator2.State == Models.ElevatorState.Idle && !_isProcessingRequests2)
             {
-                foreach (var floor in _destinationFloors3.Where(f => f < _currentFloor3))
+                if (_elevator2IdleStartTime == null)
                 {
-                    stops.Add(floor);
-                }
-
-                foreach (var request in _pendingRequests3.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor < _currentFloor3))
-                {
-                    stops.Add(request.PickupFloor);
-                }
-
-                return stops.OrderByDescending(f => f).ToList();
-            }
-
-            return new List<int>();
-        }
-
-        private int DetermineDirection3()
-        {
-            var allTargets = _destinationFloors3
-                .Concat(_pendingRequests3.Where(r => r.Status == RequestStatus.Pending)
-                                       .Select(r => r.PickupFloor))
-                .ToList();
-
-            if (!allTargets.Any()) return 0;
-
-            var aboveCount = allTargets.Count(f => f > _currentFloor3);
-            var belowCount = allTargets.Count(f => f < _currentFloor3);
-
-            if (aboveCount > 0 && belowCount == 0) return 1;
-            if (belowCount > 0 && aboveCount == 0) return -1;
-
-            if (_elevator3.State == Models.ElevatorState.MovingUp) return 1;
-            if (_elevator3.State == Models.ElevatorState.MovingDown) return -1;
-
-            return aboveCount >= belowCount ? 1 : -1;
-        }
-
-        private async Task HandleStopOperations3(int floor, bool hasDropOff, List<PassengerRequest> pickupRequests)
-        {
-            _elevator3.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay3 = "Kapý Açýlýyor";
-            await AnimateDoor3(0.0, 1.0, ElevatorModel.DoorOperationTime);
-
-            if (hasDropOff)
-            {
-                _elevator3.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay3 = "Yolcu Ýniyor";
-
-                var droppingPassengers = _pendingRequests3
-                    .Where(r => r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp)
-                    .ToList();
-
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                foreach (var request in droppingPassengers)
-                {
-                    request.Status = RequestStatus.Completed;
-                    AddStatusMessage($"[Asansör 3] Kat {floor}: {request.PickupFloor}. kattan binen yolcu indi");
-                }
-
-                while (_destinationFloors3.Remove(floor)) { }
-                PassengerCount3 -= droppingPassengers.Count;
-                await Task.Delay(500);
-            }
-
-            foreach (var pickupRequest in pickupRequests)
-            {
-                if (_passengerCount3 >= MaxCapacity)
-                {
-                    AddStatusMessage($"[Asansör 3] Kat {floor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                    break;
-                }
-
-                _elevator3.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay3 = "Yolcu Biniyor";
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                pickupRequest.Status = RequestStatus.PickedUp;
-                PassengerCount3++;
-
-                var waitTimeSeconds = (int)(DateTime.Now - pickupRequest.RequestTime).TotalSeconds;
-                pickupRequest.WaitTimeSeconds = waitTimeSeconds;
-
-                int floorDistance = Math.Abs(pickupRequest.PickupFloor - pickupRequest.ElevatorFloorAtRequest);
-
-                _mlDataCollector.RecordRequest(
-                    pickupRequest.SimulationTime,
-                    pickupRequest.PickupFloor,
-                    pickupRequest.ElevatorFloorAtRequest,
-                    -1,
-                    floorDistance,
-                    "Asansör 3",
-                    waitTimeSeconds,
-                    _passengerCount3 - 1,
-                    "PickedUp"
-                );
-
-                AddStatusMessage($"[Asansör 3] Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-
-                IsInnerPanelOpen3 = true;
-
-                int waitCount = 0;
-                while (pickupRequest.DestinationFloor == -1 && waitCount < 300)
-                {
-                    await Task.Delay(100);
-                    waitCount++;
-                }
-
-                IsInnerPanelOpen3 = false;
-                await Task.Delay(300);
-            }
-
-            ElevatorStateDisplay3 = "Kapý Kapanýyor";
-            await Task.Delay(TimeSpan.FromSeconds(1.0));
-
-            _elevator3.State = Models.ElevatorState.DoorClosing;
-            await AnimateDoor3(1.0, 0.0, ElevatorModel.DoorOperationTime);
-        }
-
-        private async Task AnimateDoor3(double from, double to, double duration)
-        {
-            const int steps = 20;
-            double stepDuration = duration / steps;
-            double increment = (to - from) / steps;
-
-            for (int i = 0; i <= steps; i++)
-            {
-                DoorOpenAmount3 = from + (increment * i);
-                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
-            }
-
-            DoorOpenAmount3 = to;
-        }
-
-        // ==================== DÖRDÜNCÜ ASANSÖR METODLARÝ ====================
-
-        private async Task HandleSameFloorPickup4(PassengerRequest request)
-        {
-            if (_passengerCount4 >= MaxCapacity)
-            {
-                AddStatusMessage($"[Asansör 4] Kat {_currentFloor4}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                request.Status = RequestStatus.Completed;
-                return;
-            }
-
-            _elevator4.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay4 = "Kapý Açýlýyor";
-            await AnimateDoor4(0.0, 1.0, ElevatorModel.DoorOperationTime);
-
-            _elevator4.State = Models.ElevatorState.WaitingForPassenger;
-            ElevatorStateDisplay4 = "Yolcu Biniyor";
-            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-            request.Status = RequestStatus.PickedUp;
-            PassengerCount4++;
-
-            var waitTimeSeconds = (int)(DateTime.Now - request.RequestTime).TotalSeconds;
-            request.WaitTimeSeconds = waitTimeSeconds;
-
-            int floorDistance = Math.Abs(request.PickupFloor - request.ElevatorFloorAtRequest);
-
-            _mlDataCollector.RecordRequest(
-                request.SimulationTime,
-                request.PickupFloor,
-                request.ElevatorFloorAtRequest,
-                -1,
-                floorDistance,
-                "Asansör 4",
-                waitTimeSeconds,
-                _passengerCount4 - 1,
-                "PickedUp"
-            );
-
-            AddStatusMessage($"[Asansör 4] Kat {_currentFloor4}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-
-            IsInnerPanelOpen4 = true;
-
-            int waitCount = 0;
-            while (request.DestinationFloor == -1 && waitCount < 300)
-            {
-                await Task.Delay(100);
-                waitCount++;
-            }
-
-            IsInnerPanelOpen4 = false;
-
-            ElevatorStateDisplay4 = "Kapý Kapanýyor";
-            await Task.Delay(TimeSpan.FromSeconds(1.0));
-
-            _elevator4.State = Models.ElevatorState.DoorClosing;
-            await AnimateDoor4(1.0, 0.0, ElevatorModel.DoorOperationTime);
-
-            if (request.DestinationFloor != -1 && !_isProcessingRequests4)
-            {
-                await ProcessRequests4();
-            }
-        }
-
-        private async Task ProcessRequests4()
-        {
-            _isProcessingRequests4 = true;
-
-            while (_pendingRequests4.Any(r => r.Status != RequestStatus.Completed) || 
-                   _destinationFloors4.Count > 0)
-            {
-                var direction = DetermineDirection4();
-
-                if (direction == 0)
-                {
-                    _elevator4.State = Models.ElevatorState.Idle;
-                    ElevatorStateDisplay4 = "Beklemede";
-                    await Task.Delay(500);
-                    continue;
-                }
-
-                var stopsInDirection = GetAllStopsInDirection4(direction);
-
-                if (!stopsInDirection.Any())
-                {
-                    await Task.Delay(100);
-                    continue;
-                }
-
-                var nextStop = stopsInDirection.First();
-
-                _elevator4.State = direction > 0 
-                    ? Models.ElevatorState.MovingUp 
-                    : Models.ElevatorState.MovingDown;
-                ElevatorStateDisplay4 = direction > 0 ? "Yukarý Gidiyor" : "Aþaðý Gidiyor";
-
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
-
-                if (direction > 0)
-                {
-                    _elevator4.CurrentFloor++;
+                    _elevator2IdleStartTime = DateTime.Now;
                 }
                 else
                 {
-                    _elevator4.CurrentFloor--;
-                }
-
-                CurrentFloor4 = _elevator4.CurrentFloor;
-
-                if (_elevator4.CurrentFloor == nextStop)
-                {
-                    bool hasDropOff = _destinationFloors4.Contains(nextStop);
-                    var pickupRequests = _pendingRequests4
-                        .Where(r => r.PickupFloor == nextStop && r.Status == RequestStatus.Pending)
-                        .ToList();
-
-                    if (hasDropOff || pickupRequests.Any())
+                    var idleDuration = DateTime.Now - _elevator2IdleStartTime.Value;
+                    if (idleDuration >= _idleTimeBeforeParking && _currentFloor2 != ParkingFloor)
                     {
-                        await HandleStopOperations4(nextStop, hasDropOff, pickupRequests);
+                        AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 2] Enerji tasarrufu: {(int)idleDuration.TotalSeconds}s boÅŸta, zemin kata dÃ¶nÃ¼yor");
+                        _ = ParkElevator(2);
+                        _elevator2IdleStartTime = null;
                     }
                 }
             }
-
-            _isProcessingRequests4 = false;
-            _elevator4.State = Models.ElevatorState.Idle;
-            ElevatorStateDisplay4 = "Beklemede";
+            else
+            {
+                _elevator2IdleStartTime = null;
+            }
         }
 
-        private List<int> GetAllStopsInDirection4(int direction)
+        /// <summary>
+        /// AsansÃ¶rÃ¼ zemin kata park eder (enerji tasarrufu)
+        /// </summary>
+        private async Task ParkElevator(int elevatorNumber)
         {
-            var stops = new HashSet<int>();
-
-            if (direction > 0)
+            if (elevatorNumber == 1)
             {
-                foreach (var floor in _destinationFloors4.Where(f => f > _currentFloor4))
+                if (_currentFloor == ParkingFloor || _isProcessingRequests)
+                    return;
+
+                _elevator.State = _currentFloor > ParkingFloor 
+                    ? Models.ElevatorState.MovingDown 
+                    : Models.ElevatorState.MovingUp;
+                ElevatorStateDisplay = "Park Modunda";
+
+                while (_currentFloor != ParkingFloor)
                 {
-                    stops.Add(floor);
+                    // EÄŸer yeni bir Ã§aÄŸrÄ± gelirse park iÅŸlemini iptal et
+                    if (_pendingRequests.Any() || _isProcessingRequests)
+                    {
+                        AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 1] Park iÅŸlemi iptal edildi (Yeni Ã§aÄŸrÄ± var)");
+                        return;
+                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+
+                    if (_currentFloor > ParkingFloor)
+                    {
+                        _elevator.CurrentFloor--;
+                    }
+                    else
+                    {
+                        _elevator.CurrentFloor++;
+                    }
+
+                    CurrentFloor = _elevator.CurrentFloor;
                 }
 
-                foreach (var request in _pendingRequests4.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor > _currentFloor4))
-                {
-                    stops.Add(request.PickupFloor);
-                }
-
-                return stops.OrderBy(f => f).ToList();
+                _elevator.State = Models.ElevatorState.Idle;
+                ElevatorStateDisplay = "Park Edildi (Zemin Kat)";
+                AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 1] Zemin kata park edildi");
             }
-
-            if (direction < 0)
+            else if (elevatorNumber == 2)
             {
-                foreach (var floor in _destinationFloors4.Where(f => f < _currentFloor4))
+                if (_currentFloor2 == ParkingFloor || _isProcessingRequests2)
+                    return;
+
+                _elevator2.State = _currentFloor2 > ParkingFloor 
+                    ? Models.ElevatorState.MovingDown 
+                    : Models.ElevatorState.MovingUp;
+                ElevatorStateDisplay2 = "Park Modunda";
+
+                while (_currentFloor2 != ParkingFloor)
                 {
-                    stops.Add(floor);
+                    // EÄŸer yeni bir Ã§aÄŸrÄ± gelirse park iÅŸlemini iptal et
+                    if (_pendingRequests2.Any() || _isProcessingRequests2)
+                    {
+                        AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 2] Park iÅŸlemi iptal edildi (Yeni Ã§aÄŸrÄ± var)");
+                        return;
+                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+
+                    if (_currentFloor2 > ParkingFloor)
+                    {
+                        _elevator2.CurrentFloor--;
+                    }
+                    else
+                    {
+                        _elevator2.CurrentFloor++;
+                    }
+
+                    CurrentFloor2 = _elevator2.CurrentFloor;
                 }
 
-                foreach (var request in _pendingRequests4.Where(r => r.Status == RequestStatus.Pending && r.PickupFloor < _currentFloor4))
-                {
-                    stops.Add(request.PickupFloor);
-                }
-
-                return stops.OrderByDescending(f => f).ToList();
+                _elevator2.State = Models.ElevatorState.Idle;
+                ElevatorStateDisplay2 = "Park Edildi (Zemin Kat)";
+                AddStatusMessage($"ðŸ”‹ [AsansÃ¶r 2] Zemin kata park edildi");
             }
-
-            return new List<int>();
         }
 
-        private int DetermineDirection4()
+        // ==================== EMERGENCY STOP ====================
+
+        /// <summary>
+        /// Acil durum - TÃ¼m asansÃ¶rleri durdur ve zemin kata gÃ¶nder
+        /// </summary>
+        private async Task ExecuteEmergencyStop()
         {
-            var allTargets = _destinationFloors4
-                .Concat(_pendingRequests4.Where(r => r.Status == RequestStatus.Pending)
-                                       .Select(r => r.PickupFloor))
-                .ToList();
+            AddStatusMessage("ðŸš¨ ACÄ°L DURUM AKTÄ°F! TÃ¼m asansÃ¶rler durduruluyor...");
 
-            if (!allTargets.Any()) return 0;
+            // ðŸ“Š ML KAYDI: Acil durum baÅŸlangÄ±Ã§ durumu - AsansÃ¶r 1
+            int totalPassengers = _passengerCount + _passengerCount2;
+            int elevator1Distance = Math.Abs(_currentFloor - 0);
+            int elevator2Distance = Math.Abs(_currentFloor2 - 0);
 
-            var aboveCount = allTargets.Count(f => f > _currentFloor4);
-            var belowCount = allTargets.Count(f => f < _currentFloor4);
+            _mlDataCollector.RecordRequest(
+                CurrentSimulationTime,
+                _currentFloor,           // AsansÃ¶r 1'in bulunduÄŸu kat
+                _currentFloor2,          // AsansÃ¶r 2'nin bulunduÄŸu kat (Hedef_Kat alanÄ±nda)
+                0,                       // Hedef: Zemin kat (Kat_Mesafesi iÃ§in)
+                elevator1Distance,       // AsansÃ¶r 1'in zemin kata mesafesi
+                "ACÄ°L DURUM - AsansÃ¶r 1",
+                0,                       // Bekleme sÃ¼resi yok
+                _passengerCount,         // AsansÃ¶r 1'deki yolcu sayÄ±sÄ±
+                $"Emergency_Triggered_Floor{_currentFloor}_Passengers{_passengerCount}"
+            );
 
-            if (aboveCount > 0 && belowCount == 0) return 1;
-            if (belowCount > 0 && aboveCount == 0) return -1;
+            // ðŸ“Š ML KAYDI: Acil durum baÅŸlangÄ±Ã§ durumu - AsansÃ¶r 2
+            _mlDataCollector.RecordRequest(
+                CurrentSimulationTime,
+                _currentFloor2,          // AsansÃ¶r 2'nin bulunduÄŸu kat
+                _currentFloor,           // AsansÃ¶r 1'in bulunduÄŸu kat (Hedef_Kat alanÄ±nda)
+                0,                       // Hedef: Zemin kat
+                elevator2Distance,       // AsansÃ¶r 2'nin zemin kata mesafesi
+                "ACÄ°L DURUM - AsansÃ¶r 2",
+                0,                       // Bekleme sÃ¼resi yok
+                _passengerCount2,        // AsansÃ¶r 2'deki yolcu sayÄ±sÄ±
+                $"Emergency_Triggered_Floor{_currentFloor2}_Passengers{_passengerCount2}"
+            );
 
-            if (_elevator4.State == Models.ElevatorState.MovingUp) return 1;
-            if (_elevator4.State == Models.ElevatorState.MovingDown) return -1;
+            AddStatusMessage($"ðŸ“Š ML: Acil durum kaydedildi - Toplam {totalPassengers} yolcu, AsansÃ¶r 1: Kat {_currentFloor}, AsansÃ¶r 2: Kat {_currentFloor2}");
 
-            return aboveCount >= belowCount ? 1 : -1;
+            // SimÃ¼lasyonu duraklat
+            _isSimulationRunning = false;
+
+            // TÃ¼m bekleyen istekleri iptal et
+            _pendingRequests.Clear();
+            _pendingRequests2.Clear();
+            _destinationFloors.Clear();
+            _destinationFloors2.Clear();
+            _floorCallCounts.Clear();
+
+            // Panel kapalÄ±ysa kapat
+            IsInnerPanelOpen = false;
+            IsInnerPanelOpen2 = false;
+
+            // Ä°ÅŸlem bayraklarÄ±nÄ± kapat
+            _isProcessingRequests = false;
+            _isProcessingRequests2 = false;
+
+            // AsansÃ¶r durumlarÄ±nÄ± gÃ¼ncelle
+            ElevatorStateDisplay = "ACÄ°L DURUM - Zemin kata iniyor";
+            ElevatorStateDisplay2 = "ACÄ°L DURUM - Zemin kata iniyor";
+
+            // Her iki asansÃ¶rÃ¼ de zemin kata gÃ¶nder
+            var emergencyStartTime = DateTime.Now;
+            await Task.WhenAll(
+                EmergencyMoveToGroundFloor(_elevator, 1),
+                EmergencyMoveToGroundFloor(_elevator2, 2)
+            );
+            var emergencyDuration = (int)(DateTime.Now - emergencyStartTime).TotalSeconds;
+
+            // ðŸ“Š ML KAYDI: Acil durum tamamlandÄ± - AsansÃ¶r 1
+            _mlDataCollector.RecordRequest(
+                CurrentSimulationTime,
+                0,                       // Åžimdi zemin katta
+                _currentFloor,           // BaÅŸlangÄ±Ã§ katÄ± (Hedef_Kat alanÄ±nda)
+                0,                       // Hedef: Zemin kat
+                elevator1Distance,       // Kat edilen mesafe
+                "ACÄ°L DURUM - AsansÃ¶r 1",
+                emergencyDuration,       // Acil durum sÃ¼resi
+                0,                       // Yolcular boÅŸaltÄ±ldÄ±
+                $"Emergency_Completed_Duration{emergencyDuration}s"
+            );
+
+            // ðŸ“Š ML KAYDI: Acil durum tamamlandÄ± - AsansÃ¶r 2
+            _mlDataCollector.RecordRequest(
+                CurrentSimulationTime,
+                0,                       // Åžimdi zemin katta
+                _currentFloor2,          // BaÅŸlangÄ±Ã§ katÄ± (Hedef_Kat alanÄ±nda)
+                0,                       // Hedef: Zemin kat
+                elevator2Distance,       // Kat edilen mesafe
+                "ACÄ°L DURUM - AsansÃ¶r 2",
+                emergencyDuration,       // Acil durum sÃ¼resi
+                0,                       // Yolcular boÅŸaltÄ±ldÄ±
+                $"Emergency_Completed_Duration{emergencyDuration}s"
+            );
+
+            // Ä°ÅŸlem tamamlandÄ±
+            AddStatusMessage($"âœ… Acil durum tamamlandÄ± ({emergencyDuration}s). TÃ¼m asansÃ¶rler zemin katta gÃ¼vende.");
+            AddStatusMessage($"ðŸ“Š ML: Acil durum tamamlama kaydedildi - SÃ¼re: {emergencyDuration}s");
+            ElevatorStateDisplay = "Zemin Katta - Beklemede";
+            ElevatorStateDisplay2 = "Zemin Katta - Beklemede";
+
+            // SimÃ¼lasyonu yeniden baÅŸlat
+            await Task.Delay(2000); // 2 saniye bekle
+            _isSimulationRunning = true;
+            AddStatusMessage("âœ… Sistem normale dÃ¶ndÃ¼. AsansÃ¶rler kullanÄ±ma hazÄ±r.");
         }
 
-        private async Task HandleStopOperations4(int floor, bool hasDropOff, List<PassengerRequest> pickupRequests)
+        /// <summary>
+        /// Tek bir asansÃ¶rÃ¼ acil durumda zemin kata indir
+        /// </summary>
+        private async Task EmergencyMoveToGroundFloor(ElevatorModel elevator, int elevatorNumber)
         {
-            _elevator4.State = Models.ElevatorState.DoorOpening;
-            ElevatorStateDisplay4 = "Kapý Açýlýyor";
-            await AnimateDoor4(0.0, 1.0, ElevatorModel.DoorOperationTime);
+            int currentFloor = elevatorNumber == 1 ? CurrentFloor : CurrentFloor2;
 
-            if (hasDropOff)
+            // Zaten zemin kattaysa iÅŸlem yapma
+            if (currentFloor == 0)
             {
-                _elevator4.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay4 = "Yolcu Ýniyor";
-
-                var droppingPassengers = _pendingRequests4
-                    .Where(r => r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp)
-                    .ToList();
-
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                foreach (var request in droppingPassengers)
-                {
-                    request.Status = RequestStatus.Completed;
-                    AddStatusMessage($"[Asansör 4] Kat {floor}: {request.PickupFloor}. kattan binen yolcu indi");
-                }
-
-                while (_destinationFloors4.Remove(floor)) { }
-                PassengerCount4 -= droppingPassengers.Count;
-                await Task.Delay(500);
+                return;
             }
 
-            foreach (var pickupRequest in pickupRequests)
+            // KapÄ±larÄ± kapat (animasyon)
+            if (elevatorNumber == 1)
             {
-                if (_passengerCount4 >= MaxCapacity)
-                {
-                    AddStatusMessage($"[Asansör 4] Kat {floor}: Kapasite dolu ({MaxCapacity}/{MaxCapacity})");
-                    break;
-                }
-
-                _elevator4.State = Models.ElevatorState.WaitingForPassenger;
-                ElevatorStateDisplay4 = "Yolcu Biniyor";
-                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
-
-                pickupRequest.Status = RequestStatus.PickedUp;
-                PassengerCount4++;
-
-                var waitTimeSeconds = (int)(DateTime.Now - pickupRequest.RequestTime).TotalSeconds;
-                pickupRequest.WaitTimeSeconds = waitTimeSeconds;
-
-                int floorDistance = Math.Abs(pickupRequest.PickupFloor - pickupRequest.ElevatorFloorAtRequest);
-
-                _mlDataCollector.RecordRequest(
-                    pickupRequest.SimulationTime,
-                    pickupRequest.PickupFloor,
-                    pickupRequest.ElevatorFloorAtRequest,
-                    -1,
-                    floorDistance,
-                    "Asansör 4",
-                    waitTimeSeconds,
-                    _passengerCount4 - 1,
-                    "PickedUp"
-                );
-
-                AddStatusMessage($"[Asansör 4] Kat {floor}: Yolcu bindi (Bekleme: {waitTimeSeconds} saniye)");
-
-                IsInnerPanelOpen4 = true;
-
-                int waitCount = 0;
-                while (pickupRequest.DestinationFloor == -1 && waitCount < 300)
-                {
-                    await Task.Delay(100);
-                    waitCount++;
-                }
-
-                IsInnerPanelOpen4 = false;
-                await Task.Delay(300);
+                _elevator.State = Models.ElevatorState.DoorClosing;
+                await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+            }
+            else
+            {
+                _elevator2.State = Models.ElevatorState.DoorClosing;
+                await AnimateDoor2(1.0, 0.0, ElevatorModel.DoorOperationTime);
             }
 
-            ElevatorStateDisplay4 = "Kapý Kapanýyor";
-            await Task.Delay(TimeSpan.FromSeconds(1.0));
-
-            _elevator4.State = Models.ElevatorState.DoorClosing;
-            await AnimateDoor4(1.0, 0.0, ElevatorModel.DoorOperationTime);
-        }
-
-        private async Task AnimateDoor4(double from, double to, double duration)
-        {
-            const int steps = 20;
-            double stepDuration = duration / steps;
-            double increment = (to - from) / steps;
-
-            for (int i = 0; i <= steps; i++)
+            // Zemin kata kadar in
+            while (currentFloor > 0)
             {
-                DoorOpenAmount4 = from + (increment * i);
-                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
+                await Task.Delay(500); // HÄ±zlÄ± iniÅŸ (normal 1000ms yerine 500ms)
+                currentFloor--;
+
+                if (elevatorNumber == 1)
+                {
+                    CurrentFloor = currentFloor;
+                    _elevator.CurrentFloor = currentFloor;
+                }
+                else
+                {
+                    CurrentFloor2 = currentFloor;
+                    _elevator2.CurrentFloor = currentFloor;
+                }
             }
 
-            DoorOpenAmount4 = to;
+            // KapÄ±larÄ± aÃ§ ve yolcularÄ± boÅŸalt
+            if (elevatorNumber == 1)
+            {
+                _elevator.State = Models.ElevatorState.DoorOpening;
+                await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
+            }
+            else
+            {
+                _elevator2.State = Models.ElevatorState.DoorOpening;
+                await AnimateDoor2(0.0, 1.0, ElevatorModel.DoorOperationTime);
+            }
+
+            await Task.Delay(1000);
+
+            // YolcularÄ± temizle
+            if (elevatorNumber == 1)
+            {
+                PassengerCount = 0;
+            }
+            else
+            {
+                PassengerCount2 = 0;
+            }
+
+            // KapÄ±larÄ± kapat
+            if (elevatorNumber == 1)
+            {
+                _elevator.State = Models.ElevatorState.DoorClosing;
+                await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+            }
+            else
+            {
+                _elevator2.State = Models.ElevatorState.DoorClosing;
+                await AnimateDoor2(1.0, 0.0, ElevatorModel.DoorOperationTime);
+            }
         }
     }
 }
