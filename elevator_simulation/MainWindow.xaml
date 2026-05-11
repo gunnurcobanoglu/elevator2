@@ -150,7 +150,28 @@
 					</StackPanel>
 				</Border>
 				
-				<ScrollViewer VerticalScrollBarVisibility="Auto" Height="520">
+				<!-- QR Kod Butonu -->
+				<Button x:Name="btnQrCode"
+						Content="📱 QR Kod Göster"
+						Height="36"
+						Margin="5,0,5,8"
+						FontSize="13"
+						FontWeight="Bold"
+						Background="#607D8B"
+						Foreground="White"
+						BorderThickness="0"
+						Cursor="Hand"
+						Click="BtnQrCode_Click">
+					<Button.Template>
+						<ControlTemplate TargetType="Button">
+							<Border Background="{TemplateBinding Background}" CornerRadius="6">
+								<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+							</Border>
+						</ControlTemplate>
+					</Button.Template>
+				</Button>
+
+				<ScrollViewer VerticalScrollBarVisibility="Auto" Height="484">
 					<ItemsControl ItemsSource="{Binding Floors}">
 						<ItemsControl.ItemsPanel>
 							<ItemsPanelTemplate>

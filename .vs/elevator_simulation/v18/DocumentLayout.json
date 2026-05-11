@@ -1,20 +1,20 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\",
+  "WorkspaceRootPath": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation(asil)\\elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation(asil)\\elevator_simulation\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
       "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\LENOVO\\AppData\\Local\\Temp\\.vsdbgsrc\\0cbd58ac0eb67ea3fea9b8e57aca7477779f8f1ba50c6f034eaf37eeab641f98\\DUCE.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation\\elevator_simulation\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|c:\\users\\lenovo\\source\\repos\\elevatorsimulation(asil)\\elevator_simulation\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{EB5C6072-9068-4805-9ABE-D785B86B0749}|elevator_simulation\\elevator_simulation.csproj|solutionrelative:elevator_simulation\\viewmodels\\mainviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -49,14 +49,13 @@
               "$type": "Document",
               "DocumentIndex": 3,
               "Title": "MainViewModel.cs",
-              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\ViewModels\\MainViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\ViewModels\\MainViewModel.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\ViewModels\\MainViewModel.cs",
-              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\ViewModels\\MainViewModel.cs",
+              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\ViewModels\\MainViewModel.cs",
               "RelativeToolTip": "elevator_simulation\\ViewModels\\MainViewModel.cs",
               "ViewState": "AgIAAOQGAAAAAAAAAIBJwHsHAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-14T08:13:51.996Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-14T08:13:51.996Z"
             },
             {
               "$type": "Document",
@@ -74,11 +73,11 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "MainWindow.xaml.cs",
-              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\MainWindow.xaml.cs",
               "RelativeDocumentMoniker": "elevator_simulation\\MainWindow.xaml.cs",
-              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\MainWindow.xaml.cs",
               "RelativeToolTip": "elevator_simulation\\MainWindow.xaml.cs",
-              "ViewState": "AgIAAJEAAAAAAAAAAAAAAOwAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAALcAAAAAAAAAAAAwwMQAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-12T17:40:23.422Z",
               "EditorCaption": ""
@@ -87,13 +86,12 @@
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\MainWindow.xaml",
               "RelativeDocumentMoniker": "elevator_simulation\\MainWindow.xaml",
-              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation\\elevator_simulation\\MainWindow.xaml",
+              "ToolTip": "C:\\Users\\LENOVO\\source\\repos\\ElevatorSimulation(asil)\\elevator_simulation\\MainWindow.xaml",
               "RelativeToolTip": "elevator_simulation\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2026-02-28T14:06:39.584Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-02-28T14:06:39.584Z"
             },
             {
               "$type": "Document",

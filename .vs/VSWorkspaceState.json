@@ -1,6 +1,8 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\elevator_simulation"
   ],
+  "SelectedNode": "\\elevator_simulation\\MainWindow.xaml.cs",
   "PreviewInSolutionExplorer": false
 }

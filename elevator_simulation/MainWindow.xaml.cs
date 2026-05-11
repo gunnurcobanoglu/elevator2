@@ -168,6 +168,13 @@ namespace elevator_simulation
             }
         }
 
+        private void BtnQrCode_Click(object sender, RoutedEventArgs e)
+        {
+            var qrWindow = new Views.QrCodeWindow();
+            qrWindow.Owner = this;
+            qrWindow.Show();
+        }
+
         /// <summary>
         /// Bina kat çizgilerini ve numaralarýný döngü ile Canvas üzerine yerleþtirir.
         /// Her kat için bir çizgi (Line) ve bir kat numarasý (TextBlock) oluþturur.
