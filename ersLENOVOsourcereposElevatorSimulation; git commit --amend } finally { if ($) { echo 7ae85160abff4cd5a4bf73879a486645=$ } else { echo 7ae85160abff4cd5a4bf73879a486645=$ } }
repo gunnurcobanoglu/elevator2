@@ -1,0 +1,5 @@
+[33mcommit 44408286334100d2977d44e7074243b7d4317a14[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Günnur Çobanoğlu <gunnurcobanoglu@gmail.com>
+Date:   Mon Dec 22 01:22:46 2025 +0300
+
+    Asansör SCAN algoritması ve mesaj geçmişi eklendi - Yolcu öncelik sistemi düzeltildi - Dinamik yolcu ikonları - Kalıcı mesaj geçmişi ScrollViewer ile - Hedef seçimi için bekleme mekanizması

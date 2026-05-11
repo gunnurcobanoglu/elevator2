@@ -1,0 +1,364 @@
+﻿<Window x:Class="elevator_simulation.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:elevator_simulation"
+        xmlns:vm="clr-namespace:elevator_simulation.ViewModels"
+        xmlns:conv="clr-namespace:elevator_simulation.Converters"
+        mc:Ignorable="d"
+        Title="Asansor Simulasyonu" Height="700" Width="1000">
+
+	<Window.Resources>
+		<conv:FloorToPositionConverter x:Key="FloorToPositionConverter"/>
+		<conv:FloorListPositionConverter x:Key="FloorListPositionConverter"/>
+		<conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+		<conv:PassengerStatusConverter x:Key="PassengerStatusConverter"/>
+		<conv:FloorEqualityConverter x:Key="FloorEqualityConverter"/>
+	</Window.Resources>
+
+	<Window.DataContext>
+		<vm:MainViewModel />
+	</Window.DataContext>
+
+	<Grid Background="#0f0f0f">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="200"/>
+			<ColumnDefinition Width="*"/>
+			<ColumnDefinition Width="250"/>
+		</Grid.ColumnDefinitions>
+
+		<!-- Sol Panel - Kat Butonlari (0-19) -->
+		<Border Grid.Column="0" Background="White" Margin="1" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<StackPanel Margin="10">
+				<TextBlock Text="Katlar (0-19)" FontSize="20" FontWeight="Heavy" 
+                          HorizontalAlignment="Center" Margin="0,0,0,10"/>
+				<ScrollViewer VerticalScrollBarVisibility="Auto" Height="600">
+					<ItemsControl ItemsSource="{Binding Floors}">
+						<ItemsControl.ItemsPanel>
+							<ItemsPanelTemplate>
+								<StackPanel/>
+							</ItemsPanelTemplate>
+						</ItemsControl.ItemsPanel>
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Button Content="{Binding}" 
+                                        Command="{Binding DataContext.FloorClickCommand, 
+                                                 RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"
+                                        Height="35" Margin="5" FontSize="14" FontWeight="Bold"
+                                        BorderThickness="0" Cursor="Hand">
+									<Button.Template>
+										<ControlTemplate TargetType="Button">
+											<Border Background="{TemplateBinding Background}" 
+                                                    CornerRadius="5" Padding="5">
+												<ContentPresenter HorizontalAlignment="Center" 
+                                                                VerticalAlignment="Center"/>
+											</Border>
+										</ControlTemplate>
+									</Button.Template>
+									<Button.Style>
+										<Style TargetType="Button">
+											<Setter Property="Background" Value="#Ffc0cb"/>
+											<Setter Property="Foreground" Value="Brown"/>
+											<Style.Triggers>
+												<DataTrigger Value="True">
+													<DataTrigger.Binding>
+														<MultiBinding Converter="{StaticResource FloorEqualityConverter}">
+															<Binding />
+															<Binding Path="DataContext.CurrentFloor" 
+                                                                    RelativeSource="{RelativeSource AncestorType=Window}"/>
+														</MultiBinding>
+													</DataTrigger.Binding>
+													<Setter Property="Background" Value="#4CAF50"/>
+												</DataTrigger>
+												<Trigger Property="IsMouseOver" Value="True">
+													<Setter Property="Background" Value="#fea9b8"/>
+												</Trigger>
+												<Trigger Property="IsEnabled" Value="False">
+													<Setter Property="Background" Value="#CCCCCC"/>
+													<Setter Property="Foreground" Value="Brown"/>
+												</Trigger>
+											</Style.Triggers>
+										</Style>
+									</Button.Style>
+								</Button>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+				</ScrollViewer>
+			</StackPanel>
+		</Border>
+
+		<!-- Orta Panel - Asansor Gorsellestirmesi -->
+		<Border Grid.Column="1" Background="White" Margin="10" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="*"/>
+				</Grid.RowDefinitions>
+
+				<!-- Baslik -->
+				<TextBlock Grid.Row="0" Text="ASANSOR SIMULASYONU" 
+                          FontSize="24" FontWeight="Bold" 
+                          HorizontalAlignment="Center" Margin="0,20,0,20"
+                          Foreground="#68228b"/>
+
+				<!-- Asansor Saft - Yukseklik 600 piksel (10 kat x 60 piksel) -->
+				<Border Margin="50,-1190,50,10" Background="#ffb6c1" 
+                       BorderBrush="Black" BorderThickness="2" Grid.RowSpan="2">
+					<Grid ClipToBounds="True">
+						<!-- Kat Cizgileri ve Numaralari - Asansorle birlikte hareket eder -->
+						<!-- Canvas yuksekligi: 1200 piksel (20 kat x 60 piksel) -->
+						<!-- VerticalAlignment="Bottom" sayesinde 0. kat en altta baslayacak -->
+						<Canvas VerticalAlignment="Center" Height="1829">
+							<Canvas.RenderTransform>
+								<TranslateTransform Y="{Binding CurrentFloor, 
+                                    Converter={StaticResource FloorListPositionConverter}}"/>
+							</Canvas.RenderTransform>
+
+							<!-- Her kat 60 piksel, en altan (0. kat) baslayarak yukari dogru -->
+
+							<!-- 0. Kat (Zemin) - Canvas.Bottom = 0 (en altta) -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Black" StrokeThickness="2" Canvas.Bottom="0"/>
+							<TextBlock Text="0" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="15"/>
+
+							<!-- 1. Kat - Canvas.Bottom = 60 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="60"/>
+							<TextBlock Text="1" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="75"/>
+
+							<!-- 2. Kat - Canvas.Bottom = 120 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="120"/>
+							<TextBlock Text="2" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="135"/>
+
+							<!-- 3. Kat - Canvas.Bottom = 180 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="180"/>
+							<TextBlock Text="3" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="195"/>
+
+							<!-- 4. Kat - Canvas.Bottom = 240 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="240"/>
+							<TextBlock Text="4" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="255"/>
+
+							<!-- 5. Kat - Canvas.Bottom = 300 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="300"/>
+							<TextBlock Text="5" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="315"/>
+
+							<!-- 6. Kat - Canvas.Bottom = 360 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="360"/>
+							<TextBlock Text="6" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="375"/>
+
+							<!-- 7. Kat - Canvas.Bottom = 420 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="420"/>
+							<TextBlock Text="7" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="435"/>
+
+							<!-- 8. Kat - Canvas.Bottom = 480 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="480"/>
+							<TextBlock Text="8" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="495"/>
+
+							<!-- 9. Kat - Canvas.Bottom = 540 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="540"/>
+							<TextBlock Text="9" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="555"/>
+
+							<!-- 10. Kat - Canvas.Bottom = 600 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="600"/>
+							<TextBlock Text="10" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="615"/>
+
+							<!-- 11. Kat - Canvas.Bottom = 660 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="660"/>
+							<TextBlock Text="11" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="675"/>
+
+							<!-- 12. Kat - Canvas.Bottom = 720 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="720"/>
+							<TextBlock Text="12" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="735"/>
+
+							<!-- 13. Kat - Canvas.Bottom = 780 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="780"/>
+							<TextBlock Text="13" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="795"/>
+
+							<!-- 14. Kat - Canvas.Bottom = 840 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="840"/>
+							<TextBlock Text="14" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="855"/>
+
+							<!-- 15. Kat - Canvas.Bottom = 900 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="900"/>
+							<TextBlock Text="15" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="915"/>
+
+							<!-- 16. Kat - Canvas.Bottom = 960 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="960"/>
+							<TextBlock Text="16" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="975"/>
+
+							<!-- 17. Kat - Canvas.Bottom = 1020 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="1020"/>
+							<TextBlock Text="17" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="1035"/>
+
+							<!-- 18. Kat - Canvas.Bottom = 1080 -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Brown" StrokeThickness="1" 
+                                  StrokeDashArray="5,2" Canvas.Bottom="1080"/>
+							<TextBlock Text="18" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="1095"/>
+
+							<!-- 19. Kat - Canvas.Bottom = 1140 (en ustte) -->
+							<Line X1="0" Y1="0" X2="1000" Y2="0" Stroke="Black" StrokeThickness="2" Canvas.Bottom="1140"/>
+							<TextBlock Text="19" FontSize="24" FontWeight="Bold" Foreground="Brown" 
+                                      Canvas.Left="15" Canvas.Bottom="1155"/>
+						</Canvas>
+
+						<!-- Asansor Kabini - Merkez hizada, 60 piksel yukseklikte -->
+						<Border Width="200" Height="60" 
+                               Background="#cd6889"
+                               BorderBrush="Black" BorderThickness="3"
+                               CornerRadius="5"
+                               VerticalAlignment="Bottom"
+                               HorizontalAlignment="Center">
+							<Border.RenderTransform>
+								<TranslateTransform Y="{Binding CurrentFloor, 
+                                    Converter={StaticResource FloorToPositionConverter}}"/>
+							</Border.RenderTransform>
+							<Grid>
+								<!-- Asansor Ici Bilgisi -->
+								<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Orientation="Horizontal">
+									<TextBlock Text="KAT: " FontSize="20" FontWeight="Bold" 
+                                              Foreground="White" VerticalAlignment="Center"/>
+									<TextBlock Text="{Binding CurrentFloor}" 
+                                              FontSize="24" FontWeight="Bold" 
+                                              Foreground="Yellow" VerticalAlignment="Center"/>
+								</StackPanel>
+
+								<!-- Yolcu Gostergesi - Sag ust kose -->
+								<TextBlock Text="&#x1F464;" FontSize="16" 
+                                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                                          Margin="0,5,10,0"
+                                          Visibility="{Binding HasPassenger, 
+                                              Converter={StaticResource BoolToVisibilityConverter}}"/>
+							</Grid>
+						</Border>
+					</Grid>
+				</Border>
+			</Grid>
+		</Border>
+
+		<!-- Sag Panel - Bilgi Paneli -->
+		<Border Grid.Column="2" Background="White" Margin="10" CornerRadius="5">
+			<Border.Effect>
+				<DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3"/>
+			</Border.Effect>
+			<StackPanel Margin="20">
+				<TextBlock Text="BILGI PANELI" FontSize="18" FontWeight="Bold" 
+                          HorizontalAlignment="Center" Margin="0,0,0,20"
+                          Foreground="#2196F3"/>
+
+				<!-- Mevcut Durum -->
+				<Border Background="#E3F2FD" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mevcut Durum:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#1976D2" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding ElevatorStateDisplay}" FontSize="16" 
+                                  Foreground="#424242" TextWrapping="Wrap"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Mevcut Kat -->
+				<Border Background="#E8F5E9" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mevcut Kat:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#388E3C" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding CurrentFloor}" FontSize="28" 
+                                  FontWeight="Bold" Foreground="#4CAF50" 
+                                  HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Yolcu Durumu -->
+				<Border Background="#FFF3E0" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Yolcu Durumu:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#F57C00" Margin="0,0,0,5"/>
+						<TextBlock FontSize="16" Foreground="#424242">
+                            <Run Text="&#x1F464;"/>
+                            <Run Text="{Binding HasPassenger, 
+                                Converter={StaticResource PassengerStatusConverter}}"/>
+						</TextBlock>
+					</StackPanel>
+				</Border>
+
+				<!-- Toplam Sure -->
+				<Border Background="#F3E5F5" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Toplam Simulasyon Suresi:" FontSize="14" 
+                                  FontWeight="Bold" Foreground="#7B1FA2" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding TotalTime}" FontSize="20" 
+                                  FontWeight="Bold" Foreground="#9C27B0" 
+                                  HorizontalAlignment="Center"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Durum Mesaji -->
+				<Border Background="#FFEBEE" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+					<StackPanel>
+						<TextBlock Text="Mesaj:" FontSize="14" FontWeight="Bold" 
+                                  Foreground="#C62828" Margin="0,0,0,5"/>
+						<TextBlock Text="{Binding StatusMessage}" FontSize="14" 
+                                  Foreground="#424242" TextWrapping="Wrap"/>
+					</StackPanel>
+				</Border>
+
+				<!-- Bilgilendirme -->
+				<Border Background="#FAFAFA" CornerRadius="5" Padding="15" Margin="0,20,0,0"
+                       BorderBrush="#E0E0E0" BorderThickness="1">
+					<StackPanel>
+						<TextBlock Text="&#x2139;&#xFE0F; Bilgi" FontSize="12" FontWeight="Bold" 
+                                  Margin="0,0,0,5"/>
+						<TextBlock FontSize="11" Foreground="Brown" TextWrapping="Wrap">
+                            <Run Text="&#x2022; Kat degisimi: 1 sn"/>
+                            <LineBreak/>
+                            <Run Text="&#x2022; Kapi acma/kapama: 0.5 sn"/>
+                            <LineBreak/>
+                            <Run Text="&#x2022; Bekleme suresi: 2 sn"/>
+						</TextBlock>
+					</StackPanel>
+				</Border>
+			</StackPanel>
+		</Border>
+	</Grid>
+</Window>

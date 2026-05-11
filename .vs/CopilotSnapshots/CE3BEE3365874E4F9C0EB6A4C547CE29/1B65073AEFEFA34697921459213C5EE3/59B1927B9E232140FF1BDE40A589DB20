@@ -1,0 +1,195 @@
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using elevator_simulation.Commands;
+using elevator_simulation.Models;
+
+namespace elevator_simulation.ViewModels
+{
+    public class MainViewModel : ViewModelBase
+    {
+        private readonly DispatcherTimer _timer;
+        private DateTime _simulationStartTime;
+        private bool _isSimulationRunning;
+
+        private string _statusMessage;
+        private string _totalTime;
+        private bool _isInnerPanelOpen;
+        private PassengerRequest? _currentPickingUpPassenger;
+
+        public ObservableCollection<int> Floors { get; }
+        public ElevatorViewModel Elevator1 { get; }
+        public ElevatorViewModel Elevator2 { get; }
+        
+        public ICommand CallElevatorCommand { get; }
+        public ICommand SelectDestinationCommand { get; }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
+
+        public string TotalTime
+        {
+            get => _totalTime;
+            set => SetProperty(ref _totalTime, value);
+        }
+
+        public bool IsInnerPanelOpen
+        {
+            get => _isInnerPanelOpen;
+            set => SetProperty(ref _isInnerPanelOpen, value);
+        }
+
+        private TaskCompletionSource<int>? _destinationSelectionTask;
+
+        public MainViewModel()
+        {
+            Floors = new ObservableCollection<int>();
+            for (int i = 0; i < ElevatorModel.TotalFloors; i++)
+            {
+                Floors.Add(i);
+            }
+
+            // İki asansör oluştur
+            Elevator1 = new ElevatorViewModel(1);
+            Elevator2 = new ElevatorViewModel(2);
+
+            CallElevatorCommand = new RelayCommand(OnCallElevator, CanCallElevator);
+            SelectDestinationCommand = new RelayCommand(OnSelectDestination, CanSelectDestination);
+
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100)
+            };
+            _timer.Tick += Timer_Tick;
+
+            _statusMessage = "[Sistem] İki asansör sistemi hazır.";
+            _totalTime = "00:00:00";
+            _isSimulationRunning = false;
+            _isInnerPanelOpen = false;
+        }
+
+        private void AddStatusMessage(string message)
+        {
+            var timestamp = DateTime.Now.ToString("HH:mm:ss");
+            var newMessage = $"[{timestamp}] {message}";
+            
+            if (string.IsNullOrEmpty(_statusMessage))
+            {
+                StatusMessage = newMessage;
+            }
+            else
+            {
+                StatusMessage = newMessage + "\n" + _statusMessage;
+            }
+        }
+
+        private bool CanCallElevator(object? parameter)
+        {
+            return parameter is int;
+        }
+
+        private async void OnCallElevator(object? parameter)
+        {
+            if (parameter is not int callingFloor)
+                return;
+
+            if (!_isSimulationRunning)
+            {
+                _simulationStartTime = DateTime.Now;
+                _timer.Start();
+                _isSimulationRunning = true;
+            }
+
+            var request = new PassengerRequest(callingFloor);
+            AddStatusMessage($"Kat {callingFloor}: Çağrı geldi");
+
+            // En uygun asansörü seç
+            var selectedElevator = SelectBestElevator(callingFloor);
+            
+            if (selectedElevator == null)
+            {
+                AddStatusMessage($"Kat {callingFloor}: Tüm asansörler dolu (kapasite: 10/10)");
+                return;
+            }
+
+            AddStatusMessage($"Asansör {selectedElevator.ElevatorId}: Kat {callingFloor}'a gidiyor");
+
+            // Yolcuyu al ve hedef seç
+            _currentPickingUpPassenger = request;
+            
+            bool success = await selected Elevator.PickupPassengerWithDestination(request, async () =>
+            {
+                // Hedef seçimi için panel aç
+                _destinationSelectionTask = new TaskCompletionSource<int>();
+                IsInnerPanelOpen = true;
+                
+                int destination = await _destinationSelectionTask.Task;
+                
+                IsInnerPanelOpen = false;
+                return destination;
+            });
+
+            if (success)
+            {
+                AddStatusMessage($"Asansör {selectedElevator.ElevatorId}: Kat {request.PickupFloor} → Kat {request.DestinationFloor}");
+                
+                // Yolcuları hedeflerine götür
+                _ = Task.Run(async () => await selectedElevator.ProcessDestinations());
+            }
+
+            _currentPickingUpPassenger = null;
+        }
+
+        private ElevatorViewModel? SelectBestElevator(int floor)
+        {
+            // Her iki asansörü değerlendir
+            var elevators = new[] { Elevator1, Elevator2 };
+            
+            var available = elevators.Where(e => e.CanAcceptPassenger()).ToList();
+            
+            if (!available.Any())
+                return null;
+
+            // En yakın boş asansörü seç
+            return available.OrderBy(e =>
+            {
+                // Mesafe + meşguliyet skoru
+                int distance = e.GetDistanceToFloor(floor);
+                int busyPenalty = e.IsBusy ? 100 : 0;
+                int passengerPenalty = e.PassengerCount * 2;
+                
+                return distance + busyPenalty + passengerPenalty;
+            }).First();
+        }
+
+        private bool CanSelectDestination(object? parameter)
+        {
+            return parameter is int targetFloor && 
+                   _isInnerPanelOpen && 
+                   _currentPickingUpPassenger != null;
+        }
+
+        private void OnSelectDestination(object? parameter)
+        {
+            if (parameter is not int targetFloor)
+                return;
+
+            if (_destinationSelectionTask != null && !_destinationSelectionTask.Task.IsCompleted)
+            {
+                _destinationSelectionTask.SetResult(targetFloor);
+            }
+        }
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            if (_isSimulationRunning)
+            {
+                var elapsed = DateTime.Now - _simulationStartTime;
+                TotalTime = elapsed.ToString(@"hh\:mm\:ss");
+            }
+        }
+    }
+}

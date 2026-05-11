@@ -1,0 +1,211 @@
+﻿using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Threading;
+using elevator_simulation.Commands;
+using elevator_simulation.Models;
+
+namespace elevator_simulation.ViewModels
+{
+    public class MainViewModel : ViewModelBase
+    {
+        private readonly ElevatorModel _elevator;
+        private readonly DispatcherTimer _timer;
+        private DateTime _simulationStartTime;
+        private bool _isSimulationRunning;
+
+        private int _currentFloor;
+        private string _elevatorState;
+        private string _statusMessage;
+        private string _totalTime;
+        private bool _hasPassenger;
+
+        public ObservableCollection<int> Floors { get; }
+        public ICommand FloorClickCommand { get; }
+
+        public int CurrentFloor
+        {
+            get => _currentFloor;
+            set => SetProperty(ref _currentFloor, value);
+        }
+
+        public string ElevatorStateDisplay
+        {
+            get => _elevatorState;
+            set => SetProperty(ref _elevatorState, value);
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
+
+        public string TotalTime
+        {
+            get => _totalTime;
+            set => SetProperty(ref _totalTime, value);
+        }
+
+        public bool HasPassenger
+        {
+            get => _hasPassenger;
+            set => SetProperty(ref _hasPassenger, value);
+        }
+
+        public MainViewModel()
+        {
+            _elevator = new ElevatorModel();
+            Floors = new ObservableCollection<int>();
+            
+            // Katlar? 0'dan 19'a kadar olu?tur
+            for (int i = 0; i < ElevatorModel.TotalFloors; i++)
+            {
+                Floors.Add(i);
+            }
+
+            FloorClickCommand = new RelayCommand(OnFloorClick, CanSelectFloor);
+
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100)
+            };
+            _timer.Tick += Timer_Tick;
+
+            // Ba?lang?ç de?erleri
+            _currentFloor = 0;
+            _elevatorState = "Beklemede";
+            _statusMessage = "Bir kat seçin";
+            _totalTime = "00:00:00";
+            _hasPassenger = false;
+            _isSimulationRunning = false;
+        }
+
+        private bool CanSelectFloor(object? parameter)
+        {
+            if (parameter is int targetFloor)
+            {
+                // Asansör me?gul de?ilse ve farkl? bir kat seçildiyse
+                return _elevator.State == Models.ElevatorState.Idle && targetFloor != _elevator.CurrentFloor;
+            }
+            return false;
+        }
+
+        private async void OnFloorClick(object? parameter)
+        {
+            if (parameter is int targetFloor)
+            {
+                if (!_isSimulationRunning)
+                {
+                    _simulationStartTime = DateTime.Now;
+                    _timer.Start();
+                    _isSimulationRunning = true;
+                }
+
+                _elevator.TargetFloor = targetFloor;
+                
+                if (!_elevator.HasPassenger)
+                {
+                    StatusMessage = $"Yolcuyu almak için {targetFloor}. kata gidiliyor...";
+                    await MoveToFloor(targetFloor);
+                    await PickUpPassenger();
+                    StatusMessage = "Yolcu alındı. Hedef kat seçin.";
+                }
+                else
+                {
+                    StatusMessage = $"Yolcuyu {targetFloor}. kata birakiliyor...";
+                    await MoveToFloor(targetFloor);
+                    await DropOffPassenger();
+                    StatusMessage = "Yolcu birakildi. Bir kat seçin.";
+                }
+            }
+        }
+
+        private async Task MoveToFloor(int targetFloor)
+        {
+            if (_elevator.CurrentFloor < targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingUp;
+                ElevatorStateDisplay = "Yukari Çikiyor";
+                
+                while (_elevator.CurrentFloor < targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor++;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+            else if (_elevator.CurrentFloor > targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingDown;
+                ElevatorStateDisplay = "Asagi iniyor";
+                
+                while (_elevator.CurrentFloor > targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor--;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+        }
+
+        private async Task PickUpPassenger()
+        {
+            // Kap? aç?l?yor
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kapi Açiliyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.DoorOperationTime));
+
+            // Yolcu bekleniyor
+            _elevator.State = Models.ElevatorState.WaitingForPassenger;
+            ElevatorStateDisplay = "Yolcu Bekleniyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+            // Yolcu bindi
+            _elevator.HasPassenger = true;
+            HasPassenger = true;
+
+            // Kap? kapan?yor
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            ElevatorStateDisplay = "Kapi Kapaniyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.DoorOperationTime));
+
+            _elevator.State = Models.ElevatorState.Idle;
+            ElevatorStateDisplay = "Beklemede";
+        }
+
+        private async Task DropOffPassenger()
+        {
+            // Kap? aç?l?yor
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kap? Aç?l?yor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.DoorOperationTime));
+
+            // Yolcu iniyor
+            _elevator.State = Models.ElevatorState.WaitingForPassenger;
+            ElevatorStateDisplay = "Yolcu ?niyor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+            // Yolcu indi
+            _elevator.HasPassenger = false;
+            HasPassenger = false;
+
+            // Kap? kapan?yor
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            ElevatorStateDisplay = "Kap? Kapan?yor";
+            await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.DoorOperationTime));
+
+            _elevator.State = Models.ElevatorState.Idle;
+            ElevatorStateDisplay = "Beklemede";
+        }
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            if (_isSimulationRunning)
+            {
+                var elapsed = DateTime.Now - _simulationStartTime;
+                TotalTime = elapsed.ToString(@"hh\:mm\:ss");
+            }
+        }
+    }
+}
