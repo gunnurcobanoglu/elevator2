@@ -1,0 +1,25 @@
+﻿namespace elevator_simulation.Models
+{
+    public class PassengerRequest
+    {
+        public int PickupFloor { get; set; }       // Yolcunun bindiği kat
+        public int DestinationFloor { get; set; }  // Yolcunun hedef katı
+        public DateTime RequestTime { get; set; }   // İstek zamanı
+        public RequestStatus Status { get; set; }   // İsteğin durumu
+
+        public PassengerRequest(int pickupFloor, int destinationFloor = -1)
+        {
+            PickupFloor = pickupFloor;
+            DestinationFloor = destinationFloor;
+            RequestTime = DateTime.Now;
+            Status = RequestStatus.Pending;
+        }
+    }
+
+    public enum RequestStatus
+    {
+        Pending,      // Bekliyor (henüz alınmadı)
+        PickedUp,     // Yolcu bindi
+        Completed     // Yolcu indi
+    }
+}

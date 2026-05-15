@@ -1,0 +1,102 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
+
+namespace elevator_simulation
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        // Sabitler: Katların görsel ayarları
+        private const int KatYuksekligi = 55;
+        private const int ToplamKatSayisi = 19; // 0'dan 19'a kadar (20 kat)
+
+        /// <summary>
+        /// Yapıcı (Constructor): Uygulama başladığında çalışır
+        /// </summary>
+        public MainWindow()
+        {
+            InitializeComponent();
+            Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Kat çizgilerini oluştur (Her iki asansör için)
+            var canvas = FindName("MainCanvas") as Canvas;
+            if (canvas != null)
+            {
+                CizgileriOlustur(canvas);
+            }
+
+            var canvas2 = FindName("MainCanvas2") as Canvas;
+            if (canvas2 != null)
+            {
+                CizgileriOlustur(canvas2);
+            }
+
+            // ML veri sayacını güncelle
+            UpdateDataCountDisplay();
+
+            // Saat değişikliklerini dinle
+            if (txtHour != null)
+            {
+                txtHour.TextChanged += OnTimeChanged;
+            }
+            if (txtMinute != null)
+            {
+                txtMinute.TextChanged += OnTimeChanged;
+            }
+
+            // Başlangıç saatini ayarla
+            UpdateSimulationTime();
+        }
+
+        private void OnTimeChanged(object sender, TextChangedEventArgs e)
+        {
+            // Saat değiştiğinde ViewModel'i güncelle
+            UpdateSimulationTime();
+            UpdateDataCountDisplay();
+        }
+
+        private void UpdateSimulationTime()
+        {
+            if (int.TryParse(txtHour.Text, out int hour) && 
+                int.TryParse(txtMinute.Text, out int minute))
+            {
+                if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60)
+                {
+                    // ViewModel'e simülasyon zamanını ilet
+                    var viewModel = DataContext as elevator_simulation.ViewModels.MainViewModel;
+                    if (viewModel != null)
+                    {
+                        viewModel.CurrentSimulationTime = new TimeSpan(hour, minute, 0);
+                    }
+                }
+            }
+        }
+
+        private void UpdateDataCountDisplay()
+        {
+            try
+            {
+                var collector = new Services.MLDataCollector();
+                int count = collector.GetRecordCount();
+                if (txtDataCount != null)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        txtDataCount.Text = $"Toplanan Veri: {count}";
+                    });
+                }
+            }
+            catch
+            {
+                // Hata durumunda sessizce geç
+            }
+        }
+    }
+}

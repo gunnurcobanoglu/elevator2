@@ -1,0 +1,388 @@
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
+using System.Windows.Threading;
+using elevator_simulation.Commands;
+using elevator_simulation.Models;
+
+namespace elevator_simulation.ViewModels
+{
+    public class MainViewModel : ViewModelBase
+    {
+        private readonly ElevatorModel _elevator;
+        private readonly DispatcherTimer _timer;
+        private DateTime _simulationStartTime;
+        private bool _isSimulationRunning;
+
+        private int _currentFloor;
+        private string _elevatorState;
+        private string _statusMessage;
+        private string _totalTime;
+        private int _passengerCount;
+        private bool _isInnerPanelOpen;
+        private double _doorOpenAmount;
+        private bool _isProcessingRequests;
+
+        // Yolcu istekleri ve hedefler
+        private readonly List<PassengerRequest> _pendingRequests = new();
+        private readonly HashSet<int> _destinationFloors = new();
+        private const int MaxCapacity = 5;
+
+        public ObservableCollection<int> Floors { get; }
+        public ICommand CallElevatorCommand { get; }
+        public ICommand SelectDestinationCommand { get; }
+
+        public int CurrentFloor
+        {
+            get => _currentFloor;
+            set => SetProperty(ref _currentFloor, value);
+        }
+
+        public string ElevatorStateDisplay
+        {
+            get => _elevatorState;
+            set => SetProperty(ref _elevatorState, value);
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
+
+        public string TotalTime
+        {
+            get => _totalTime;
+            set => SetProperty(ref _totalTime, value);
+        }
+
+        public int PassengerCount
+        {
+            get => _passengerCount;
+            set
+            {
+                SetProperty(ref _passengerCount, value);
+                OnPropertyChanged(nameof(HasPassenger));
+            }
+        }
+
+        public bool HasPassenger => _passengerCount > 0;
+
+        public bool IsInnerPanelOpen
+        {
+            get => _isInnerPanelOpen;
+            set => SetProperty(ref _isInnerPanelOpen, value);
+        }
+
+        public double DoorOpenAmount
+        {
+            get => _doorOpenAmount;
+            set => SetProperty(ref _doorOpenAmount, value);
+        }
+
+        public MainViewModel()
+        {
+            _elevator = new ElevatorModel();
+            Floors = new ObservableCollection<int>();
+            
+            for (int i = 0; i < ElevatorModel.TotalFloors; i++)
+            {
+                Floors.Add(i);
+            }
+
+            CallElevatorCommand = new RelayCommand(OnCallElevator, CanCallElevator);
+            SelectDestinationCommand = new RelayCommand(OnSelectDestination, CanSelectDestination);
+
+            _timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(100)
+            };
+            _timer.Tick += Timer_Tick;
+
+            _currentFloor = 0;
+            _elevatorState = "Beklemede";
+            _statusMessage = "Asansörü çağırmak için bir kat seçin";
+            _totalTime = "00:00:00";
+            _passengerCount = 0;
+            _isSimulationRunning = false;
+            _isInnerPanelOpen = false;
+            _doorOpenAmount = 0.0;
+            _isProcessingRequests = false;
+        }
+
+        private bool CanCallElevator(object? parameter)
+        {
+            // Asansör dolu değilse çağrılabilir
+            return parameter is int && _passengerCount < MaxCapacity;
+        }
+
+        private async void OnCallElevator(object? parameter)
+        {
+            if (parameter is int callingFloor)
+            {
+                if (!_isSimulationRunning)
+                {
+                    _simulationStartTime = DateTime.Now;
+                    _timer.Start();
+                    _isSimulationRunning = true;
+                }
+
+                // Yeni bir yolcu isteği oluştur (henüz hedef belirsiz)
+                var request = new PassengerRequest(callingFloor);
+                _pendingRequests.Add(request);
+
+                StatusMessage = $"{callingFloor}. kattan asansör çağrıldı. İstekler kuyruğa eklendi.";
+
+                // Eğer asansör boşta ise, istekleri işlemeye başla
+                if (!_isProcessingRequests)
+                {
+                    await ProcessRequests();
+                }
+            }
+        }
+
+        private bool CanSelectDestination(object? parameter)
+        {
+            // İç panel açıksa ve hedef farklı bir katsa seçilebilir
+            return parameter is int targetFloor && 
+                   _isInnerPanelOpen && 
+                   targetFloor != _currentFloor;
+        }
+
+        private void OnSelectDestination(object? parameter)
+        {
+            if (parameter is int targetFloor)
+            {
+                // Hedef kata gitmek için listeye ekle
+                _destinationFloors.Add(targetFloor);
+
+                // Son alınan yolcunun hedefini güncelle
+                var lastPickedUp = _pendingRequests
+                    .Where(r => r.Status == RequestStatus.PickedUp && r.DestinationFloor == -1)
+                    .FirstOrDefault();
+
+                if (lastPickedUp != null)
+                {
+                    lastPickedUp.DestinationFloor = targetFloor;
+                }
+
+                StatusMessage = $"Hedef {targetFloor}. kat eklendi. (Toplam yolcu: {_passengerCount})";
+            }
+        }
+
+        private async Task ProcessRequests()
+        {
+            _isProcessingRequests = true;
+
+            while (_pendingRequests.Any(r => r.Status != RequestStatus.Completed) || 
+                   _destinationFloors.Count > 0)
+            {
+                // 1. Yön belirleme (yukarı veya aşağı)
+                var direction = DetermineDirection();
+
+                if (direction == 0)
+                {
+                    // Hiçbir istek yok, bekle
+                    _elevator.State = Models.ElevatorState.Idle;
+                    ElevatorStateDisplay = "Beklemede";
+                    StatusMessage = "Yeni çağrı bekleniyor.";
+                    await Task.Delay(500);
+                    continue;
+                }
+
+                // 2. Bir sonraki durağı bul
+                int? nextStop = FindNextStop(direction);
+
+                if (nextStop.HasValue)
+                {
+                    // Hedefe git
+                    await MoveToFloor(nextStop.Value);
+
+                    // Bu katta yolcu indirme var mı?
+                    bool hasDropOff = _destinationFloors.Contains(nextStop.Value);
+
+                    // Bu katta yolcu alma var mı?
+                    var pickupRequest = _pendingRequests
+                        .FirstOrDefault(r => r.PickupFloor == nextStop.Value && 
+                                           r.Status == RequestStatus.Pending);
+
+                    if (hasDropOff || pickupRequest != null)
+                    {
+                        await HandleStopOperations(nextStop.Value, hasDropOff, pickupRequest);
+                    }
+                }
+                else
+                {
+                    // Durak yok, biraz bekle
+                    await Task.Delay(100);
+                }
+            }
+
+            _isProcessingRequests = false;
+            StatusMessage = "Tüm istekler tamamlandı.";
+        }
+
+        private int DetermineDirection()
+        {
+            // Hedef katlar veya bekleyen istekler varsa yön belirle
+            var allTargets = _destinationFloors
+                .Concat(_pendingRequests.Where(r => r.Status == RequestStatus.Pending)
+                                       .Select(r => r.PickupFloor))
+                .ToList();
+
+            if (!allTargets.Any()) return 0;
+
+            var aboveCount = allTargets.Count(f => f > _currentFloor);
+            var belowCount = allTargets.Count(f => f < _currentFloor);
+
+            // Yukarıda daha fazla istek varsa yukarı, değilse aşağı
+            if (aboveCount > 0 && belowCount == 0) return 1;  // Yukarı
+            if (belowCount > 0 && aboveCount == 0) return -1; // Aşağı
+
+            // Her iki yönde de istek varsa, mevcut harekete devam et
+            if (_elevator.State == Models.ElevatorState.MovingUp) return 1;
+            if (_elevator.State == Models.ElevatorState.MovingDown) return -1;
+
+            // Varsayılan: En yakın isteklere git
+            return aboveCount >= belowCount ? 1 : -1;
+        }
+
+        private int? FindNextStop(int direction)
+        {
+            var potentialStops = new List<int>();
+
+            // Hedef katlar
+            potentialStops.AddRange(_destinationFloors);
+
+            // Bekleyen yolcu alma istekleri
+            potentialStops.AddRange(_pendingRequests
+                .Where(r => r.Status == RequestStatus.Pending)
+                .Select(r => r.PickupFloor));
+
+            // Yön doğrultusundaki en yakın durağı bul
+            if (direction > 0) // Yukarı
+            {
+                return potentialStops
+                    .Where(f => f > _currentFloor)
+                    .OrderBy(f => f)
+                    .Cast<int?>()
+                    .FirstOrDefault();
+            }
+            else // Aşağı
+            {
+                return potentialStops
+                    .Where(f => f < _currentFloor)
+                    .OrderByDescending(f => f)
+                    .Cast<int?>()
+                    .FirstOrDefault();
+            }
+        }
+
+        private async Task HandleStopOperations(int floor, bool hasDropOff, PassengerRequest? pickupRequest)
+        {
+            // Kapı açılıyor
+            _elevator.State = Models.ElevatorState.DoorOpening;
+            ElevatorStateDisplay = "Kapı Açılıyor";
+            await AnimateDoor(0.0, 1.0, ElevatorModel.DoorOperationTime);
+
+            // 1. Önce yolcu indirme
+            if (hasDropOff)
+            {
+                _elevator.State = Models.ElevatorState.WaitingForPassenger;
+                ElevatorStateDisplay = "Yolcu İniyor";
+                
+                int dropOffCount = _pendingRequests.Count(r => 
+                    r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp);
+
+                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+                // İnen yolcuları işaretle
+                foreach (var request in _pendingRequests.Where(r => 
+                    r.DestinationFloor == floor && r.Status == RequestStatus.PickedUp).ToList())
+                {
+                    request.Status = RequestStatus.Completed;
+                }
+
+                _destinationFloors.Remove(floor);
+                PassengerCount -= dropOffCount;
+                StatusMessage = $"{dropOffCount} yolcu {floor}. katta indi. (Kalan: {_passengerCount})";
+            }
+
+            // 2. Sonra yolcu alma (kapasite varsa)
+            if (pickupRequest != null && _passengerCount < MaxCapacity)
+            {
+                _elevator.State = Models.ElevatorState.WaitingForPassenger;
+                ElevatorStateDisplay = "Yolcu Biniyor";
+                await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.WaitingTime));
+
+                pickupRequest.Status = RequestStatus.PickedUp;
+                PassengerCount++;
+                
+                StatusMessage = $"Yolcu {floor}. kattan bindi. Hedef katı seçin. (Toplam: {_passengerCount})";
+                
+                // İç paneli aç
+                IsInnerPanelOpen = true;
+                await Task.Delay(2000); // Hedef seçimi için bekle
+                IsInnerPanelOpen = false;
+            }
+
+            // Kapı kapanıyor
+            ElevatorStateDisplay = "Kapı Kapanıyor";
+            await Task.Delay(TimeSpan.FromSeconds(1.0));
+
+            _elevator.State = Models.ElevatorState.DoorClosing;
+            await AnimateDoor(1.0, 0.0, ElevatorModel.DoorOperationTime);
+        }
+
+        private async Task MoveToFloor(int targetFloor)
+        {
+            if (_elevator.CurrentFloor < targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingUp;
+                ElevatorStateDisplay = "Yukarı Çıkıyor";
+                
+                while (_elevator.CurrentFloor < targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor++;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+            else if (_elevator.CurrentFloor > targetFloor)
+            {
+                _elevator.State = Models.ElevatorState.MovingDown;
+                ElevatorStateDisplay = "Aşağı İniyor";
+                
+                while (_elevator.CurrentFloor > targetFloor)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ElevatorModel.FloorTravelTime));
+                    _elevator.CurrentFloor--;
+                    CurrentFloor = _elevator.CurrentFloor;
+                }
+            }
+        }
+
+        private async Task AnimateDoor(double from, double to, double duration)
+        {
+            const int steps = 20;
+            double stepDuration = duration / steps;
+            double increment = (to - from) / steps;
+
+            for (int i = 0; i <= steps; i++)
+            {
+                DoorOpenAmount = from + (increment * i);
+                await Task.Delay(TimeSpan.FromSeconds(stepDuration));
+            }
+
+            DoorOpenAmount = to;
+        }
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            if (_isSimulationRunning)
+            {
+                var elapsed = DateTime.Now - _simulationStartTime;
+                TotalTime = elapsed.ToString(@"hh\:mm\:ss");
+            }
+        }
+    }
+}

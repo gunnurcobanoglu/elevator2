@@ -1,0 +1,86 @@
+﻿using System.IO;
+using System.Text;
+using elevator_simulation.Models;
+
+namespace elevator_simulation.Services
+{
+    /// <summary>
+    /// Machine Learning için veri toplama servisi
+    /// CSV formatında eğitim verisi kaydeder
+    /// </summary>
+    public class MLDataCollector
+    {
+        private readonly string _csvFilePath;
+        private bool _headerWritten = false;
+
+        public MLDataCollector(string csvFilePath = "ml_training_data.csv")
+        {
+            _csvFilePath = csvFilePath;
+            
+            // Eğer dosya yoksa header yaz
+            if (!File.Exists(_csvFilePath))
+            {
+                WriteHeader();
+            }
+            else
+            {
+                _headerWritten = true;
+            }
+        }
+
+        private void WriteHeader()
+        {
+            var header = "SimulationTime,Hour,Minute,PickupFloor,ElevatorFloorAtRequest,WaitTimeSeconds,TotalPassengers,ElevatorState";
+            File.WriteAllText(_csvFilePath, header + Environment.NewLine, Encoding.UTF8);
+            _headerWritten = true;
+        }
+
+        /// <summary>
+        /// ML veri kaydı oluştur
+        /// </summary>
+        public void RecordRequest(
+            TimeSpan simulationTime,
+            int pickupFloor,
+            int elevatorFloorAtRequest,
+            int waitTimeSeconds,
+            int totalPassengers,
+            string elevatorState)
+        {
+            if (!_headerWritten)
+            {
+                WriteHeader();
+            }
+
+            var line = $"{simulationTime:hh\\:mm\\:ss},{simulationTime.Hours},{simulationTime.Minutes}," +
+                       $"{pickupFloor},{elevatorFloorAtRequest},{waitTimeSeconds}," +
+                       $"{totalPassengers},{elevatorState}";
+
+            File.AppendAllText(_csvFilePath, line + Environment.NewLine, Encoding.UTF8);
+        }
+
+        /// <summary>
+        /// Tüm veriyi temizle (yeni eğitim için)
+        /// </summary>
+        public void ClearData()
+        {
+            if (File.Exists(_csvFilePath))
+            {
+                File.Delete(_csvFilePath);
+            }
+            _headerWritten = false;
+            WriteHeader();
+        }
+
+        /// <summary>
+        /// Toplanan veri sayısını döndür
+        /// </summary>
+        public int GetRecordCount()
+        {
+            if (!File.Exists(_csvFilePath))
+                return 0;
+
+            var lines = File.ReadAllLines(_csvFilePath);
+            return Math.Max(0, lines.Length - 1); // Header hariç
+        }
+    }
+}
